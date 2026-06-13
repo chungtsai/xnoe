@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>戰鬥陀螺：極限霓虹衝擊 | Beyblade Neon Champions</title>
+    <!-- Google Fonts for Sci-Fi / Gaming Aesthetics -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        <!-- Background Decorative Elements -->
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
+        
+        <!-- ================= MAIN MENU / SETUP SCREEN ================= -->
+        <section id="setup-screen" class="screen active">
+            <header class="game-header">
+                <h1 class="logo-text">BEYBLADE</h1>
+                <h2 class="sub-logo-text">NEON CHAMPIONS</h2>
+                <p class="tagline">極 限 霓 虹 衝 擊</p>
+            </header>
+
+            <main class="setup-container">
+                <div class="players-setup-grid">
+                    <!-- Player 1 Config Card -->
+                    <div class="player-config-card" id="config-p1" data-player="1">
+                        <div class="card-header p1-theme">
+                            <span class="player-badge">P1</span>
+                            <h3>藍色星擊</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="control-group">
+                                <label>玩家類型</label>
+                                <select class="player-type-select" id="p1-type">
+                                    <option value="human" selected>玩家 1 (按鍵: Q)</option>
+                                    <option value="ai">AI 機器人</option>
+                                    <option value="none">停用</option>
+                                </select>
+                            </div>
+                            <div class="control-group beyblade-select-group">
+                                <label>陀螺類型</label>
+                                <div class="beyblade-type-selectors">
+                                    <button class="type-btn active" data-type="attack">攻擊型</button>
+                                    <button class="type-btn" data-type="defense">防禦型</button>
+                                    <button class="type-btn" data-type="stamina">持久型</button>
+                                    <button class="type-btn" data-type="balance">平衡型</button>
+                                </div>
+                            </div>
+                            <div class="stats-preview">
+                                <div class="stat-row"><span class="stat-label">速度</span><div class="stat-bar"><div class="stat-fill p1-bg" style="width: 80%"></div></div></div>
+                                <div class="stat-row"><span class="stat-label">重量</span><div class="stat-bar"><div class="stat-fill p1-bg" style="width: 50%"></div></div></div>
+                                <div class="stat-row"><span class="stat-label">持久</span><div class="stat-bar"><div class="stat-fill p1-bg" style="width: 40%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Player 2 Config Card -->
+                    <div class="player-config-card" id="config-p2" data-player="2">
+                        <div class="card-header p2-theme">
+                            <span class="player-badge">P2</span>
+                            <h3>紅色暴風</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="control-group">
+                                <label>玩家類型</label>
+                                <select class="player-type-select" id="p2-type">
+                                    <option value="human">玩家 2 (按鍵: P)</option>
+                                    <option value="ai" selected>AI 機器人</option>
+                                    <option value="none">停用</option>
+                                </select>
+                            </div>
+                            <div class="control-group beyblade-select-group">
+                                <label>陀螺類型</label>
+                                <div class="beyblade-type-selectors">
+                                    <button class="type-btn active" data-type="attack">攻擊型</button>
+                                    <button class="type-btn" data-type="defense">防禦型</button>
+                                    <button class="type-btn" data-type="stamina">持久型</button>
+                                    <button class="type-btn" data-type="balance">平衡型</button>
+                                </div>
+                            </div>
+                            <div class="stats-preview">
+                                <div class="stat-row"><span class="stat-label">速度</span><div class="stat-bar"><div class="stat-fill p2-bg" style="width: 80%"></div></div></div>
+                                <div class="stat-row"><span class="stat-label">重量</span><div class="stat-bar"><div class="stat-fill p2-bg" style="width: 50%"></div></div></div>
+                                <div class="stat-row"><span class="stat-label">持久</span><div class="stat-bar"><div class="stat-fill p2-bg" style="width: 40%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Player 3 Config Card -->
+                    <div class="player-config-card" id="config-p3" data-player="3">
+                        <div class="card-header p3-theme">
+                            <span class="player-badge">P3</span>
+                            <h3>綠色裂空</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="control-group">
+                                <label>玩家類型</label>
+                                <select class="player-type-select" id="p3-type">
+                                    <option value="human">玩家 3 (按鍵: Z)</option>
+                                    <option value="ai">AI 機器人</option>
+                                    <option value="none" selected>停用</option>
+                                </select>
+                            </div>
+                            <div class="control-group beyblade-select-group">
+                                <label>陀螺類型</label>
+                                <div class="beyblade-type-selectors">
+                                    <button class="type-btn" data-type="attack">攻擊型</button>
+                                    <button class="type-btn" data-type="defense">防禦型</button>
+                                    <button class="type-btn active" data-type="stamina">持久型</button>
+                                    <button class="type-btn" data-type="balance">平衡型</button>
+                                </div>
+                            </div>
+                            <div class="stats-preview">
+                                <div class="stat-row"><span class="stat-label">速度</span><div class="stat-bar"><div class="stat-fill p3-bg" style="width: 30%"></div></div></div>
+                                <div class="stat-row"><span class="stat-label">重量</span><div class="stat-bar"><div class="stat-fill p3-bg" style="width: 40%"></div></div></div>
+                                <div class="stat-row"><span class="stat-label">持久</span><div class="stat-bar"><div class="stat-fill p3-bg" style="width: 90%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Player 4 Config Card -->
+                    <div class="player-config-card" id="config-p4" data-player="4">
+                        <div class="card-header p4-theme">
+                            <span class="player-badge">P4</span>
+                            <h3>黃色雷光</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="control-group">
+                                <label>玩家類型</label>
+                                <select class="player-type-select" id="p4-type">
+                                    <option value="human">玩家 4 (按鍵: M)</option>
+                                    <option value="ai">AI 機器人</option>
+                                    <option value="none" selected>停用</option>
+                                </select>
+                            </div>
+                            <div class="control-group beyblade-select-group">
+                                <label>陀螺類型</label>
+                                <div class="beyblade-type-selectors">
+                                    <button class="type-btn" data-type="attack">攻擊型</button>
+                                    <button class="type-btn" data-type="defense">防禦型</button>
+                                    <button class="type-btn" data-type="stamina">持久型</button>
+                                    <button class="type-btn active" data-type="balance">平衡型</button>
+                                </div>
+                            </div>
+                            <div class="stats-preview">
+                                <div class="stat-row"><span class="stat-label">速度</span><div class="stat-bar"><div class="stat-fill p4-bg" style="width: 60%"></div></div></div>
+                                <div class="stat-row"><span class="stat-label">重量</span><div class="stat-bar"><div class="stat-fill p4-bg" style="width: 60%"></div></div></div>
+                                <div class="stat-row"><span class="stat-label">持久</span><div class="stat-bar"><div class="stat-fill p4-bg" style="width: 60%"></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-panel">
+                    <div class="arena-select-container">
+                        <label for="arena-select">選擇戰鬥場地</label>
+                        <select id="arena-select" class="select-styled">
+                            <option value="standard">標準圓形場地 (Standard Circle)</option>
+                            <option value="hazard">磁暴陷阱場地 (Magnetic Hazard)</option>
+                            <option value="vortex">渦流深淵場地 (Vortex Pit)</option>
+                        </select>
+                    </div>
+                    <button id="btn-start-game" class="btn btn-primary btn-glow-anim">進入戰鬥準備</button>
+                    <div class="game-rules-info">
+                        <h3>遊戲規則：</h3>
+                        <ul>
+                            <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
+                            <li><strong>集氣能量條</strong>會快速上下移動，在最頂端（紅色臨界區）按下鎖定，可使出<strong>「極限爆發」最強陀螺</strong>！</li>
+                            <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
+                            <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
+                        </ul>
+                    </div>
+                </div>
+            </main>
+        </section>
+
+        <!-- ================= BATTLE / PLAY SCREEN ================= -->
+        <section id="battle-screen" class="screen">
+            <!-- Scoreboard Top Header -->
+            <div id="battle-scoreboard-header" class="scoreboard-hidden">
+                <div class="scoreboard-content">
+                    <div class="scoreboard-round" id="scoreboard-round-num">ROUND 1</div>
+                    <div class="scoreboard-scores" id="scoreboard-scores-list">
+                        <!-- Dynamic score content -->
+                    </div>
+                </div>
+                <div class="header-menu-container">
+                    <button id="header-menu-btn" class="header-menu-btn" aria-label="遊戲選單">
+                        <span class="menu-icon">⚙️</span> 選單
+                    </button>
+                    <div id="header-dropdown" class="header-dropdown hidden">
+                        <button id="btn-header-abort" class="dropdown-item">
+                            <span class="item-icon">🔄</span> 放棄重設
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 Corner Controls (overlayed or absolute positioned around stadium) -->
+            <div class="battle-grid-layout">
+                
+                <!-- TOP LEFT: Player 1 Panel -->
+                <div class="player-panel top-left p1-theme" id="panel-p1">
+                    <div class="panel-header">
+                        <span class="player-badge">P1</span>
+                        <span class="player-name">藍色星擊</span>
+                        <div class="round-scores" id="p1-round-scores">
+                            <span class="score-dot" id="p1-dot-1"></span>
+                            <span class="score-dot" id="p1-dot-2"></span>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Setup/Charging State UI -->
+                        <div class="charge-controls">
+                            <div class="circular-gauge-wrapper">
+                                <svg class="progress-ring" width="100" height="100">
+                                    <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                                    <circle class="progress-ring-fill" id="p1-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                                </svg>
+                                <button class="btn-charge-circle" id="btn-charge-p1" aria-label="鎖定能量">
+                                    <span class="btn-badge">P1</span>
+                                    <span class="btn-key-hint">Q</span>
+                                </button>
+                            </div>
+                            <div class="charge-status" id="p1-charge-status">等待集氣...</div>
+                        </div>
+                        <!-- In-Battle HUD State UI (hidden initially) -->
+                        <div class="battle-hud hidden">
+                            <div class="hud-stat">
+                                <span>旋轉能量 (RPM)</span>
+                                <div class="hud-progress-bar"><div class="hud-progress-fill p1-bg" id="p1-spin-bar" style="width: 100%"></div></div>
+                            </div>
+                            <div class="hud-info">
+                                <span class="hud-status-text" id="p1-hud-status">準備戰鬥</span>
+                                <span class="hud-stat-value" id="p1-hud-val">100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOP RIGHT: Player 2 Panel -->
+                <div class="player-panel top-right p2-theme" id="panel-p2">
+                    <div class="panel-header">
+                        <span class="player-badge">P2</span>
+                        <span class="player-name">紅色暴風</span>
+                        <div class="round-scores" id="p2-round-scores">
+                            <span class="score-dot" id="p2-dot-1"></span>
+                            <span class="score-dot" id="p2-dot-2"></span>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Setup/Charging State UI -->
+                        <div class="charge-controls">
+                            <div class="circular-gauge-wrapper">
+                                <svg class="progress-ring" width="100" height="100">
+                                    <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                                    <circle class="progress-ring-fill" id="p2-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                                </svg>
+                                <button class="btn-charge-circle" id="btn-charge-p2" aria-label="鎖定能量">
+                                    <span class="btn-badge">P2</span>
+                                    <span class="btn-key-hint">P</span>
+                                </button>
+                            </div>
+                            <div class="charge-status" id="p2-charge-status">等待集氣...</div>
+                        </div>
+                        <!-- In-Battle HUD State UI -->
+                        <div class="battle-hud hidden">
+                            <div class="hud-stat">
+                                <span>旋轉能量 (RPM)</span>
+                                <div class="hud-progress-bar"><div class="hud-progress-fill p2-bg" id="p2-spin-bar" style="width: 100%"></div></div>
+                            </div>
+                            <div class="hud-info">
+                                <span class="hud-status-text" id="p2-hud-status">準備戰鬥</span>
+                                <span class="hud-stat-value" id="p2-hud-val">100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MIDDLE: Arena Area -->
+                <div class="arena-container">
+                    <!-- 30 Second Timer Display -->
+                    <div id="battle-timer-container" class="timer-hidden">
+                        <span class="timer-label">BATTLE TIME</span>
+                        <span id="battle-timer-val">30.0</span>
+                    </div>
+
+                    <div class="arena-wrapper">
+                        <!-- SVG / Canvas Stadium -->
+                        <canvas id="stadium-canvas" width="600" height="600"></canvas>
+                        
+                        <!-- Overlay Announcements (3-2-1-GO, Burst, Winner) -->
+                        <div id="announcer" class="announcer-overlay">
+                            <div id="announcer-text" class="announcer-text">準備戰鬥</div>
+                            <div id="announcer-subtext" class="announcer-subtext"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Middle Controls / Game State HUD -->
+                    <div class="arena-controls">
+                        <div id="arena-spectate-info" class="spectate-info">等待所有選手就緒...</div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM LEFT: Player 3 Panel -->
+                <div class="player-panel bottom-left p3-theme" id="panel-p3">
+                    <div class="panel-header">
+                        <span class="player-badge">P3</span>
+                        <span class="player-name">綠色裂空</span>
+                        <div class="round-scores" id="p3-round-scores">
+                            <span class="score-dot" id="p3-dot-1"></span>
+                            <span class="score-dot" id="p3-dot-2"></span>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Setup/Charging State UI -->
+                        <div class="charge-controls">
+                            <div class="circular-gauge-wrapper">
+                                <svg class="progress-ring" width="100" height="100">
+                                    <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                                    <circle class="progress-ring-fill" id="p3-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                                </svg>
+                                <button class="btn-charge-circle" id="btn-charge-p3" aria-label="鎖定能量">
+                                    <span class="btn-badge">P3</span>
+                                    <span class="btn-key-hint">Z</span>
+                                </button>
+                            </div>
+                            <div class="charge-status" id="p3-charge-status">等待集氣...</div>
+                        </div>
+                        <!-- In-Battle HUD State UI -->
+                        <div class="battle-hud hidden">
+                            <div class="hud-stat">
+                                <span>旋轉能量 (RPM)</span>
+                                <div class="hud-progress-bar"><div class="hud-progress-fill p3-bg" id="p3-spin-bar" style="width: 100%"></div></div>
+                            </div>
+                            <div class="hud-info">
+                                <span class="hud-status-text" id="p3-hud-status">準備戰鬥</span>
+                                <span class="hud-stat-value" id="p3-hud-val">100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM RIGHT: Player 4 Panel -->
+                <div class="player-panel bottom-right p4-theme" id="panel-p4">
+                    <div class="panel-header">
+                        <span class="player-badge">P4</span>
+                        <span class="player-name">黃色雷光</span>
+                        <div class="round-scores" id="p4-round-scores">
+                            <span class="score-dot" id="p4-dot-1"></span>
+                            <span class="score-dot" id="p4-dot-2"></span>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Setup/Charging State UI -->
+                        <div class="charge-controls">
+                            <div class="circular-gauge-wrapper">
+                                <svg class="progress-ring" width="100" height="100">
+                                    <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                                    <circle class="progress-ring-fill" id="p4-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                                </svg>
+                                <button class="btn-charge-circle" id="btn-charge-p4" aria-label="鎖定能量">
+                                    <span class="btn-badge">P4</span>
+                                    <span class="btn-key-hint">M</span>
+                                </button>
+                            </div>
+                            <div class="charge-status" id="p4-charge-status">等待集氣...</div>
+                        </div>
+                        <!-- In-Battle HUD State UI -->
+                        <div class="battle-hud hidden">
+                            <div class="hud-stat">
+                                <span>旋轉能量 (RPM)</span>
+                                <div class="hud-progress-bar"><div class="hud-progress-fill p4-bg" id="p4-spin-bar" style="width: 100%"></div></div>
+                            </div>
+                            <div class="hud-info">
+                                <span class="hud-status-text" id="p4-hud-status">準備戰鬥</span>
+                                <span class="hud-stat-value" id="p4-hud-val">100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Round Over Modal Overlay -->
+            <div id="round-modal" class="modal-overlay hidden">
+                <div class="modal-content card-blur">
+                    <div class="modal-header">
+                        <h2 id="modal-round-title">ROUND 1 結束</h2>
+                    </div>
+                    <div class="modal-body">
+                        <div class="round-winner-banner">
+                            <span class="winner-trophy">🏆</span>
+                            <h3 id="modal-round-winner">藍色星擊 贏得本局！</h3>
+                        </div>
+                        <div class="modal-scores-summary">
+                            <h4>目前戰績比分</h4>
+                            <div id="modal-scores-list">
+                                <!-- Filled dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="btn-modal-next" class="btn btn-primary btn-glow-anim">開始下一局</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= VICTORY / RESULTS SCREEN ================= -->
+        <section id="victory-screen" class="screen">
+            <div class="victory-container card-blur">
+                <header class="victory-header">
+                    <h2 class="victory-title">戰鬥結束！</h2>
+                    <div class="winner-announcement">
+                        <div class="winner-crown">👑</div>
+                        <h1 id="winner-name" class="winner-name-text">玩家 1 藍色星擊</h1>
+                        <p class="winner-subtext">成為了本場鬥士冠軍！</p>
+                    </div>
+                </header>
+
+                <div class="victory-stats-box">
+                    <h3>戰場數據摘要</h3>
+                    <div class="stats-table">
+                        <div class="stats-table-header">
+                            <div>名次</div>
+                            <div>陀螺</div>
+                            <div>生存時間</div>
+                            <div>撞擊次數</div>
+                            <div>完美集氣</div>
+                        </div>
+                        <div id="victory-stats-rows">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="victory-actions">
+                    <button id="btn-rematch" class="btn btn-primary btn-glow-anim">重新開始戰鬥</button>
+                    <button id="btn-main-menu" class="btn btn-secondary">返回主選單</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Game Sound Controller Toggle -->
+        <button id="audio-toggle" class="audio-toggle-btn" aria-label="切換音效">
+            <span class="audio-icon">🔊</span>
+        </button>
+    </div>
+
+    <!-- Main Game Script -->
+    <script src="app.js"></script>
+</body>
+</html>
