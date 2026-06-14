@@ -546,7 +546,7 @@ const game = {
     currentRound: 1,
     maxBattleTimer: 99.0, // Default to 99.0
     battleTimer: 99.0,
-    gameMode: 'normal',   // normal, item
+    gameMode: 'item',   // normal, item
     players: [
         { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', giantKey: 'e', giantKeyLabel: 'E', defendKey: 'w', defendKeyLabel: 'W', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
         { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', giantKey: 'o', giantKeyLabel: 'O', defendKey: 'i', defendKeyLabel: 'I', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
@@ -703,8 +703,8 @@ class BeybladePhysics {
             const ty = dx / distToCenter;
             this.vx += tx * 0.08;
             this.vy += ty * 0.08;
-        } else if (stadiumType === 'hazard') {
-            // Check collisions with moving shock hazard zones
+        } else if (stadiumType === 'hazard' || stadiumType === 'shadow') {
+            // Check collisions with moving shock hazard zones or shadow beyblades
             hazardZones.forEach(zone => {
                 const hzDx = this.x - zone.x;
                 const hzDy = this.y - zone.y;
@@ -714,17 +714,26 @@ class BeybladePhysics {
                     if (!(this.invincibleTimer > 0)) {
                         this.spin -= 0.35;
                         if (this.hazardDamageCooldown <= 0) {
-                            game.particles.push(new DamageText(this.x, this.y, 0.35, '#00e5ff'));
+                            game.particles.push(new DamageText(this.x, this.y, 0.35, stadiumType === 'shadow' ? '#9400d3' : '#00e5ff'));
                             this.hazardDamageCooldown = 0.25;
                         }
                     }
-                    this.vx += (hzDx / hzDist) * 0.4;
-                    this.vy += (hzDy / hzDist) * 0.4;
+                    // Mutual bounce-back physics
+                    const pushForce = stadiumType === 'shadow' ? 0.45 : 0.4;
+                    this.vx += (hzDx / hzDist) * pushForce;
+                    this.vy += (hzDy / hzDist) * pushForce;
+                    
+                    if (stadiumType === 'shadow') {
+                        // Push the shadow beyblade back
+                        zone.vx -= (hzDx / hzDist) * 0.35;
+                        zone.vy -= (hzDy / hzDist) * 0.35;
+                    }
+                    
                     this.damageFlash = 5;
                     
-                    // Create electric sparks
+                    // Create electric sparks / dark shadow particles
                     if (Math.random() < 0.4) {
-                        createSparks(this.x, this.y, '#ffffff', 4);
+                        createSparks(this.x, this.y, stadiumType === 'shadow' ? '#9400d3' : '#ffffff', 4);
                     }
                 }
             });
@@ -1784,6 +1793,30 @@ function setupArenaHazards() {
             { x: CENTER_X, y: CENTER_Y, radius: 35, angle: 0, orbitRadius: 120, speed: 0.02, color: 'rgba(255,255,255,0.15)' },
             { x: CENTER_X, y: CENTER_Y, radius: 35, angle: Math.PI, orbitRadius: 120, speed: 0.02, color: 'rgba(255,255,255,0.15)' }
         ];
+    } else if (game.stadiumType === 'shadow') {
+        // 10 shadow beyblades
+        for (let i = 0; i < 10; i++) {
+            // Distribute them inside the stadium but not too close to corners where players start
+            const angle = (i * Math.PI * 2) / 10 + (Math.random() - 0.5) * 0.2;
+            const dist = 50 + Math.random() * 110; // between 50 and 160 radius from center
+            const x = CENTER_X + Math.cos(angle) * dist;
+            const y = CENTER_Y + Math.sin(angle) * dist;
+            
+            // Random direction velocity
+            const moveAngle = Math.random() * Math.PI * 2;
+            const speed = 0.8 + Math.random() * 1.2; // glide around
+            
+            game.hazardZones.push({
+                x,
+                y,
+                vx: Math.cos(moveAngle) * speed,
+                vy: Math.sin(moveAngle) * speed,
+                radius: 16, // shadow beyblade size
+                spinAngle: Math.random() * Math.PI * 2,
+                spinSpeed: 0.15 + Math.random() * 0.1, // rotation speed
+                color: '#9400d3'
+            });
+        }
     }
 }
 
@@ -1889,6 +1922,68 @@ function updatePhysics(dt) {
             zone.x = CENTER_X + Math.cos(zone.angle) * zone.orbitRadius;
             zone.y = CENTER_Y + Math.sin(zone.angle) * zone.orbitRadius;
         });
+    } else if (game.stadiumType === 'shadow') {
+        // Update shadow beyblades physics
+        game.hazardZones.forEach(zone => {
+            // Update shadow beyblade rotation spin
+            zone.spinAngle = (zone.spinAngle || 0) + zone.spinSpeed * dt;
+            
+            // Move shadow beyblade
+            zone.x += zone.vx * dt;
+            zone.y += zone.vy * dt;
+            
+            // Apply a slight drag so they stay stable
+            zone.vx *= 0.99;
+            zone.vy *= 0.99;
+            
+            // Bounce off outer wall
+            const dx = zone.x - CENTER_X;
+            const dy = zone.y - CENTER_Y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const maxDist = STADIUM_RADIUS - zone.radius;
+            if (dist > maxDist) {
+                const nx = dx / dist; // normal vector pointing outwards
+                const ny = dy / dist;
+                const dot = zone.vx * nx + zone.vy * ny;
+                if (dot > 0) {
+                    zone.vx -= 2 * dot * nx;
+                    zone.vy -= 2 * dot * ny;
+                }
+                zone.x = CENTER_X + nx * maxDist;
+                zone.y = CENTER_Y + ny * maxDist;
+            }
+        });
+
+        // Collide with other shadow beyblades
+        for (let i = 0; i < game.hazardZones.length; i++) {
+            const z1 = game.hazardZones[i];
+            for (let j = i + 1; j < game.hazardZones.length; j++) {
+                const z2 = game.hazardZones[j];
+                const sDx = z2.x - z1.x;
+                const sDy = z2.y - z1.y;
+                const sDist = Math.sqrt(sDx * sDx + sDy * sDy);
+                const minDist = z1.radius + z2.radius;
+                if (sDist < minDist && sDist > 0.1) {
+                    const nx = sDx / sDist;
+                    const ny = sDy / sDist;
+                    const kx = z1.vx - z2.vx;
+                    const ky = z1.vy - z2.vy;
+                    const p = kx * nx + ky * ny;
+                    if (p > 0) {
+                        z1.vx -= p * nx;
+                        z1.vy -= p * ny;
+                        z2.vx += p * nx;
+                        z2.vy += p * ny;
+                    }
+                    // Separate slightly to prevent overlapping
+                    const overlap = minDist - sDist;
+                    z1.x -= nx * overlap * 0.5;
+                    z1.y -= ny * overlap * 0.5;
+                    z2.x += nx * overlap * 0.5;
+                    z2.y += ny * overlap * 0.5;
+                }
+            }
+        }
     }
 
     // Item Spawning & Distributing & Missile Update Logic
@@ -2775,6 +2870,10 @@ function renderStadiumBattleScene() {
             ctx.stroke();
             ctx.restore();
         });
+    } else if (game.stadiumType === 'shadow') {
+        game.hazardZones.forEach(zone => {
+            drawShadowBeyblade(zone);
+        });
     }
 
     // 2.3 Draw Active Missiles & Warning Areas
@@ -2986,6 +3085,10 @@ function drawStadiumPlate() {
         floorGrad.addColorStop(0, '#020308');
         floorGrad.addColorStop(0.6, '#080c1d');
         floorGrad.addColorStop(1, '#0c0715');
+    } else if (game.stadiumType === 'shadow') {
+        floorGrad.addColorStop(0, '#0d0717');
+        floorGrad.addColorStop(0.6, '#06030b');
+        floorGrad.addColorStop(1, '#020104');
     } else {
         floorGrad.addColorStop(0, '#0c1126');
         floorGrad.addColorStop(0.7, '#070b1a');
@@ -2999,7 +3102,7 @@ function drawStadiumPlate() {
     ctx.restore();
 
     // Concentric guide rings (cyber sports UI style)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.strokeStyle = game.stadiumType === 'shadow' ? 'rgba(148, 0, 211, 0.18)' : 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
     [50, 100, 160, 220].forEach(r => {
         ctx.beginPath();
@@ -3027,6 +3130,61 @@ function drawStadiumPlate() {
     ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.stroke();
+}
+
+function drawShadowBeyblade(zone) {
+    ctx.save();
+    ctx.translate(zone.x, zone.y);
+    ctx.rotate(zone.spinAngle || 0);
+
+    // Deep purple shadow/glow
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#9400d3';
+
+    // Outer spikes (like an aggressive attack blade)
+    const bladeCount = 5;
+    const step = (Math.PI * 2) / bladeCount;
+    ctx.fillStyle = '#1a1a24'; // Dark metal
+    for (let i = 0; i < bladeCount; i++) {
+        ctx.save();
+        ctx.rotate(i * step);
+        ctx.beginPath();
+        // Sharp hooks/spikes
+        ctx.moveTo(0, -zone.radius);
+        ctx.lineTo(zone.radius * 0.8, -zone.radius * 0.4);
+        ctx.lineTo(zone.radius * 0.3, 0);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Outer ring edge (deep violet neon)
+    ctx.strokeStyle = '#8a2be2';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, zone.radius * 0.75, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Dark energy center core
+    const coreGrad = ctx.createRadialGradient(-2, -2, 1, 0, 0, zone.radius * 0.45);
+    coreGrad.addColorStop(0, '#e0b0ff'); // bright lavender center
+    coreGrad.addColorStop(0.5, '#4b0082'); // indigo middle
+    coreGrad.addColorStop(1, '#000000'); // black outer
+    ctx.fillStyle = coreGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, zone.radius * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cross detailing
+    ctx.strokeStyle = '#9400d3';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-zone.radius * 0.2, 0);
+    ctx.lineTo(zone.radius * 0.2, 0);
+    ctx.moveTo(0, -zone.radius * 0.2);
+    ctx.lineTo(0, zone.radius * 0.2);
+    ctx.stroke();
+
+    ctx.restore();
 }
 
 function drawBeyblade(b) {
