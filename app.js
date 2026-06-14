@@ -259,6 +259,63 @@ class SoundManager {
             osc.stop(now + idx * 0.1 + 0.3);
         });
     }
+
+    playCollectItem(type) {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.type = 'sine';
+        if (type === 'heal') {
+            osc.frequency.setValueAtTime(523.25, now); // C5
+            osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+            osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else {
+            osc.frequency.setValueAtTime(440, now); // A4
+            osc.frequency.setValueAtTime(554.37, now + 0.08); // C#5
+            osc.frequency.setValueAtTime(659.25, now + 0.16); // E5
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        }
+    }
+    
+    playUseItem(type) {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        if (type === 'heal') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(900, now + 0.35);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            osc.start(now);
+            osc.stop(now + 0.35);
+        } else {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(660, now + 0.4);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.start(now);
+            osc.stop(now + 0.4);
+        }
+    }
 }
 
 const sounds = new SoundManager();
@@ -314,10 +371,10 @@ const game = {
     maxBattleTimer: 99.0, // Default to 99.0
     battleTimer: 99.0,
     players: [
-        { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0 },
-        { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0 },
-        { id: 3, name: '綠色裂空', type: 'none', beybladeType: 'stamina', color: '#00ff66', glowColor: 'rgba(0, 255, 102, 0.4)', key: 'z', keyLabel: 'Z', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0 },
-        { id: 4, name: '黃色雷光', type: 'none', beybladeType: 'balance', color: '#ffcc00', glowColor: 'rgba(255, 204, 0, 0.4)', key: 'm', keyLabel: 'M', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0 }
+        { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null },
+        { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null },
+        { id: 3, name: '綠色裂空', type: 'none', beybladeType: 'stamina', color: '#00ff66', glowColor: 'rgba(0, 255, 102, 0.4)', key: 'z', keyLabel: 'Z', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null },
+        { id: 4, name: '黃色雷光', type: 'none', beybladeType: 'balance', color: '#ffcc00', glowColor: 'rgba(255, 204, 0, 0.4)', key: 'm', keyLabel: 'M', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null }
     ],
     stadiumType: 'standard', // standard, hazard, vortex
     countdownVal: 3,
@@ -328,7 +385,9 @@ const game = {
     animationFrameId: null,
     lastTime: 0,
     hazardZones: [], // Extra obstacles / fields
-    shakeIntensity: 0
+    shakeIntensity: 0,
+    items: [], // Items spawned on stadium floor
+    itemSpawnTimer: 3.0 // Spawns items periodically
 };
 
 // --- PHYSICS CLASS REPRESENTATION ---
@@ -359,10 +418,17 @@ class BeybladePhysics {
         this.state = 'spinning'; // spinning, stopped, out
         this.history = [];
         this.damageFlash = 0; // collision flash effect duration
+        this.invincibleTimer = 0; // Invincibility duration in seconds
     }
 
     update(dt, stadiumType, hazardZones) {
         if (this.state !== 'spinning') return;
+        
+        // Update invincibility timer
+        if (this.invincibleTimer > 0) {
+            this.invincibleTimer -= dt * (16.666 / 1000);
+            if (this.invincibleTimer < 0) this.invincibleTimer = 0;
+        }
         
         // 1. Air Friction & Deceleration
         this.vx *= 0.985;
@@ -398,8 +464,10 @@ class BeybladePhysics {
                 const hzDy = this.y - zone.y;
                 const hzDist = Math.sqrt(hzDx * hzDx + hzDy * hzDy);
                 if (hzDist < zone.radius + this.radius) {
-                    // Reduce spin rapidly and push away
-                    this.spin -= 0.35;
+                    // Reduce spin rapidly and push away (skip if invincible)
+                    if (!(this.invincibleTimer > 0)) {
+                        this.spin -= 0.35;
+                    }
                     this.vx += (hzDx / hzDist) * 0.4;
                     this.vy += (hzDy / hzDist) * 0.4;
                     this.damageFlash = 5;
@@ -465,9 +533,11 @@ class BeybladePhysics {
                 this.vx -= 2 * dot * nx * 0.7;
                 this.vy -= 2 * dot * ny * 0.7;
                 
-                // Lose spin due to rough boundary friction
-                const spinPenalty = this.player.isCritical ? 1.5 : 3.5;
-                this.spin -= spinPenalty;
+                // Lose spin due to rough boundary friction (skip if invincible)
+                if (!(this.invincibleTimer > 0)) {
+                    const spinPenalty = this.player.isCritical ? 1.5 : 3.5;
+                    this.spin -= spinPenalty;
+                }
                 
                 // Add wall scrape sound
                 sounds.playCollision(0.8);
@@ -642,21 +712,31 @@ function setupUIListeners() {
             // Touch & click event
             btn.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
-                lockPlayerPower(i);
+                if (game.state === STATE_PREPARE) {
+                    lockPlayerPower(i);
+                } else if (game.state === STATE_BATTLE) {
+                    usePlayerItem(i);
+                }
             });
         }
     }
 
-    // Keyboard bindings for charging
+    // Keyboard bindings for charging and item usage
     window.addEventListener('keydown', (e) => {
-        if (game.state !== STATE_PREPARE) return;
         const key = e.key.toLowerCase();
-        
-        game.players.forEach(p => {
-            if (p.type === 'human' && p.key === key && !p.locked) {
-                lockPlayerPower(p.id);
-            }
-        });
+        if (game.state === STATE_PREPARE) {
+            game.players.forEach(p => {
+                if (p.type === 'human' && p.key === key && !p.locked) {
+                    lockPlayerPower(p.id);
+                }
+            });
+        } else if (game.state === STATE_BATTLE) {
+            game.players.forEach(p => {
+                if (p.type === 'human' && p.key === key) {
+                    usePlayerItem(p.id);
+                }
+            });
+        }
     });
 
     // Audio button
@@ -826,6 +906,7 @@ function transitionToPrepare() {
         p.eliminationRank = 0;
         p.survivalTime = 0;
         p.hits = 0;
+        p.item = null; // Reset items (items are not carried over/inherited)
     });
 
     if (game.currentRound === 1) {
@@ -865,6 +946,7 @@ function transitionToPrepare() {
         // Restore button inner HTML to initial key hint
         const btn = document.getElementById(`btn-charge-p${p.id}`);
         if (btn) {
+            btn.className = 'btn-charge-circle'; // Reset class list to default
             btn.innerHTML = `<span class="btn-badge">P${p.id}</span><span class="btn-key-hint">${p.keyLabel}</span>`;
         }
 
@@ -946,6 +1028,35 @@ function lockPlayerPower(playerId) {
     checkEveryoneLocked();
 }
 
+function usePlayerItem(playerId) {
+    const p = game.players.find(x => x.id === playerId);
+    if (!p || p.type === 'none') return;
+    
+    const b = game.activeBeyblades.find(x => x.player.id === playerId);
+    if (!b || b.state !== 'spinning') return;
+    
+    if (!p.item) return; // No item to use
+    
+    const itemType = p.item;
+    p.item = null; // Clear item immediately
+    
+    sounds.playUseItem(itemType);
+    
+    if (itemType === 'heal') {
+        // Heal 10% of max spin
+        b.spin = Math.min(b.spin + b.maxSpin * 0.1, b.maxSpin);
+        // Green sparks visual effect
+        createSparks(b.x, b.y, '#00ff66', 15, 1.2);
+        game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#00ff66'));
+    } else if (itemType === 'invincible') {
+        // 3 seconds of invincibility
+        b.invincibleTimer = 3.0;
+        // Gold sparks visual effect
+        createSparks(b.x, b.y, '#ffaa00', 15, 1.2);
+        game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ffaa00'));
+    }
+}
+
 function triggerAIConsideration(aiPlayer) {
     // AI charges up and locks after a brief randomized delay
     const delay = 800 + Math.random() * 1400; // 0.8 - 2.2 seconds
@@ -1015,6 +1126,8 @@ function transitionToBattle() {
     game.state = STATE_BATTLE;
     game.battleStartTime = performance.now();
     game.particles = [];
+    game.items = []; // Reset items on stadium floor
+    game.itemSpawnTimer = 3.0; // Spawns first item 3 seconds in
     
     announcerOverlay.classList.remove('dimmed');
     announcerText.classList.remove('trigger'); // Clear announcer overlay
@@ -1206,9 +1319,77 @@ function updatePhysics(dt) {
         });
     }
 
-    // Update individual beyblade physics
+    // Item Spawning Logic
+    game.itemSpawnTimer -= dt * (16.666 / 1000);
+    if (game.itemSpawnTimer <= 0) {
+        if (game.items.length < 2) {
+            const spawnDist = Math.random() * (STADIUM_RADIUS - 60);
+            const spawnAngle = Math.random() * Math.PI * 2;
+            const x = CENTER_X + Math.cos(spawnAngle) * spawnDist;
+            const y = CENTER_Y + Math.sin(spawnAngle) * spawnDist;
+            const type = Math.random() < 0.5 ? 'heal' : 'invincible';
+            game.items.push({
+                x,
+                y,
+                type,
+                radius: 12,
+                pulseAngle: 0
+            });
+        }
+        game.itemSpawnTimer = 5.0; // Reset spawn timer to 5s
+    }
+
+    // Update individual beyblade physics and handle item collection & AI logic
     game.activeBeyblades.forEach(b => {
         b.update(dt, game.stadiumType, game.hazardZones);
+        
+        if (b.state === 'spinning') {
+            // 1. Item Collection check
+            for (let i = game.items.length - 1; i >= 0; i--) {
+                const item = game.items[i];
+                const dist = Math.hypot(b.x - item.x, b.y - item.y);
+                if (dist < b.radius + item.radius) {
+                    // Collect item (replaces existing one)
+                    b.player.item = item.type;
+                    sounds.playCollectItem(item.type);
+                    createSparks(item.x, item.y, item.type === 'heal' ? '#00ff66' : '#ffaa00', 8, 1.0);
+                    game.items.splice(i, 1);
+                }
+            }
+            
+            // 2. AI Decision to use item
+            if (b.player.type === 'ai' && b.player.item) {
+                let shouldUse = false;
+                if (b.player.item === 'heal') {
+                    if (b.spin < b.maxSpin * 0.6) {
+                        shouldUse = true;
+                    }
+                } else if (b.player.item === 'invincible') {
+                    // Check if another spinner is close by
+                    const closeOpponent = game.activeBeyblades.some(other => {
+                        if (other === b || other.state !== 'spinning') return false;
+                        const dist = Math.hypot(other.x - b.x, other.y - b.y);
+                        return dist < 120;
+                    });
+                    if (closeOpponent) {
+                        shouldUse = true;
+                    }
+                }
+                
+                if (shouldUse) {
+                    if (!b.aiUseItemDelay) {
+                        b.aiUseItemDelay = 10 + Math.floor(Math.random() * 20); // 10-30 frames delay
+                    }
+                    b.aiUseItemDelay--;
+                    if (b.aiUseItemDelay <= 0) {
+                        usePlayerItem(b.player.id);
+                        b.aiUseItemDelay = null;
+                    }
+                } else {
+                    b.aiUseItemDelay = null;
+                }
+            }
+        }
     });
 
     // Check collisions between beyblades (O(N^2) double-loop)
@@ -1297,8 +1478,12 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         const p1Drain = spinImpactLoss * b2.style.force * 0.5;
         const p2Drain = spinImpactLoss * b1.style.force * 0.5;
         
-        b1.spin -= p1Drain;
-        b2.spin -= p2Drain;
+        if (!(b1.invincibleTimer > 0)) {
+            b1.spin -= p1Drain;
+        }
+        if (!(b2.invincibleTimer > 0)) {
+            b2.spin -= p2Drain;
+        }
 
         // Convert the transferred spin energy into tangential kick velocity
         const kickScalar = (b1.spin + b2.spin) * 0.0028;
@@ -1357,10 +1542,19 @@ function updateHUDValues() {
             circularFill.style.strokeDashoffset = offset;
         }
 
-        // Update inner button RPM text
-        const rpmEl = document.getElementById(`p${b.player.id}-btn-rpm`);
-        if (rpmEl) {
-            rpmEl.innerText = Math.round(spinPct) + '%';
+        // Update inner button visual appearance based on item possession
+        const btn = document.getElementById(`btn-charge-p${b.player.id}`);
+        if (btn) {
+            if (b.player.item === 'heal') {
+                btn.className = `btn-charge-circle has-item-heal`;
+                btn.innerHTML = `<span class="btn-badge">💊 治癒</span><span class="btn-key-hint">${b.player.keyLabel} (按)</span>`;
+            } else if (b.player.item === 'invincible') {
+                btn.className = `btn-charge-circle has-item-invincible`;
+                btn.innerHTML = `<span class="btn-badge">🛡️ 無敵</span><span class="btn-key-hint">${b.player.keyLabel} (按)</span>`;
+            } else {
+                btn.className = 'btn-charge-circle';
+                btn.innerHTML = `<span class="btn-badge" id="p${b.player.id}-btn-rpm">${Math.round(spinPct)}%</span><span class="btn-key-hint">${b.player.keyLabel}</span>`;
+            }
         }
 
         sounds.updateHum(b.player.id, spinPct / 100);
@@ -1663,6 +1857,50 @@ function renderStadiumBattleScene() {
         });
     }
 
+    // 2.5 Draw Items on the stadium floor
+    if (game.items && game.items.length > 0) {
+        game.items.forEach(item => {
+            ctx.save();
+            item.pulseAngle = (item.pulseAngle || 0) + 0.05;
+            const pulse = Math.sin(item.pulseAngle) * 2;
+            const drawRadius = item.radius + pulse;
+            
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = item.type === 'heal' ? '#00ff66' : '#ffaa00';
+            ctx.fillStyle = item.type === 'heal' ? 'rgba(0, 255, 102, 0.2)' : 'rgba(255, 170, 0, 0.2)';
+            ctx.strokeStyle = item.type === 'heal' ? '#00ff66' : '#ffaa00';
+            ctx.lineWidth = 2;
+            
+            // Outer pulsing ring
+            ctx.beginPath();
+            ctx.arc(item.x, item.y, drawRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Inner icon
+            ctx.fillStyle = item.type === 'heal' ? '#00ff66' : '#ffaa00';
+            if (item.type === 'heal') {
+                // Draw a plus "+" sign
+                const w = 4;
+                const h = 12;
+                ctx.fillRect(item.x - w/2, item.y - h/2, w, h);
+                ctx.fillRect(item.x - h/2, item.y - w/2, h, w);
+            } else {
+                // Draw a diamond/shield shape
+                ctx.beginPath();
+                ctx.moveTo(item.x, item.y - 7);
+                ctx.lineTo(item.x + 6, item.y - 3);
+                ctx.lineTo(item.x + 5, item.y + 4);
+                ctx.lineTo(item.x, item.y + 8);
+                ctx.lineTo(item.x - 5, item.y + 4);
+                ctx.lineTo(item.x - 6, item.y - 3);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        });
+    }
+
     // 3. Draw Beyblade trails
     game.activeBeyblades.forEach(b => {
         if (b.state !== 'spinning' || b.history.length < 2) return;
@@ -1835,6 +2073,30 @@ function drawBeyblade(b) {
     ctx.moveTo(0, -b.radius * 0.15);
     ctx.lineTo(0, b.radius * 0.15);
     ctx.stroke();
+
+    // Golden glowing shield effect if invincible
+    if (b.invincibleTimer > 0) {
+        ctx.save();
+        ctx.rotate(-b.angle); // Un-rotate to keep shield details static
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ffaa00';
+        ctx.strokeStyle = `rgba(255, 170, 0, ${0.4 + Math.sin(performance.now() / 80) * 0.25})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, b.radius + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Draw orbiting shield particles
+        ctx.strokeStyle = 'rgba(255, 200, 0, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, b.radius + 6, performance.now() / 200, performance.now() / 200 + Math.PI * 0.4);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, b.radius + 6, performance.now() / 200 + Math.PI, performance.now() / 200 + Math.PI * 1.4);
+        ctx.stroke();
+        ctx.restore();
+    }
 
     ctx.restore();
 }
