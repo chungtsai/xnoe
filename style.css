@@ -1556,10 +1556,10 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
 
     /* --- HOLOGRAPHIC LOTTERY OVERLAY MOBILE --- */
     .lottery-overlay {
-        width: 90vw;
-        max-width: 320px;
-        bottom: 20px;
-        padding: 8px 12px;
+        width: 95vw;
+        max-width: 290px;
+        bottom: 120px; /* Positioned above the bottom corner player panels to prevent overlapping */
+        padding: 6px 10px;
         z-index: 105;
     }
 
@@ -1597,6 +1597,9 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
 
     .reel-item {
         font-size: 0.7rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .reel-item.locked {
@@ -1608,6 +1611,8 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
         width: 100%;
         text-align: center;
         font-size: 0.7rem;
+        white-space: normal; /* Allow text wrapping if status text gets long */
+        word-wrap: break-word;
     }
 
     .lottery-status.success {
@@ -2023,7 +2028,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
 
 /* ==================== HOLOGRAPHIC LOTTERY OVERLAY ==================== */
 .lottery-overlay {
-    position: absolute;
+    position: fixed;
     bottom: 20px;
     left: 50%;
     transform: translate(-50%, 0);

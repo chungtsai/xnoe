@@ -906,15 +906,18 @@ class DamageText {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        ctx.shadowBlur = this.isCritical ? 12 : 5;
+        ctx.shadowBlur = this.isCritical ? 15 : 8;
         ctx.shadowColor = this.color;
         ctx.fillStyle = this.color;
+        ctx.strokeStyle = 'rgba(10, 10, 15, 0.85)';
+        ctx.lineWidth = this.isCritical ? 4.5 : 3;
         ctx.globalAlpha = alpha;
         
-        const fontSize = this.isCritical ? 20 : 13;
-        ctx.font = `bold ${fontSize}px Orbitron, sans-serif`;
+        const fontSize = this.isCritical ? 26 : 18;
+        ctx.font = `900 ${fontSize}px Orbitron, sans-serif`;
         
-        const displayVal = typeof this.amount === 'number' ? `-${this.amount.toFixed(1)}` : `-${this.amount}`;
+        const displayVal = typeof this.amount === 'number' ? `-${this.amount.toFixed(1)}` : this.amount;
+        ctx.strokeText(displayVal, this.x, this.y);
         ctx.fillText(displayVal, this.x, this.y);
         ctx.restore();
     }
