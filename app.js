@@ -286,6 +286,14 @@ class SoundManager {
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
             osc.start(now);
             osc.stop(now + 0.3);
+        } else if (type === 'missile') {
+            osc.frequency.setValueAtTime(659.25, now); // E5
+            osc.frequency.setValueAtTime(880.00, now + 0.08); // A5
+            osc.frequency.setValueAtTime(1046.50, now + 0.16); // C6
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
         } else {
             osc.frequency.setValueAtTime(440, now); // A4
             osc.frequency.setValueAtTime(554.37, now + 0.08); // C#5
@@ -322,6 +330,14 @@ class SoundManager {
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
             osc.start(now);
             osc.stop(now + 0.3);
+        } else if (type === 'missile') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(1800, now + 0.45);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+            osc.start(now);
+            osc.stop(now + 0.45);
         } else {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(220, now);
@@ -331,6 +347,51 @@ class SoundManager {
             osc.start(now);
             osc.stop(now + 0.4);
         }
+    }
+
+    playExplosion() {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const noiseGain = this.ctx.createGain();
+        osc.connect(noiseGain);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.linearRampToValueAtTime(30, now + 0.6);
+        
+        noiseGain.gain.setValueAtTime(0.3, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        
+        const bufferSize = this.ctx.sampleRate * 0.6;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(400, now);
+        filter.frequency.exponentialRampToValueAtTime(80, now + 0.6);
+        
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        
+        noise.start(now);
+        osc.start(now);
+        osc.stop(now + 0.6);
     }
 }
 
@@ -404,7 +465,9 @@ const game = {
     hazardZones: [], // Extra obstacles / fields
     shakeIntensity: 0,
     items: [], // Items spawned on stadium floor
-    itemSpawnTimer: 3.0 // Spawns items periodically
+    itemSpawnTimer: 3.0, // Spawns items periodically
+    itemDistributeTimer: 10.0, // Every 10s randomly sends item to player
+    missiles: [] // Active missiles in the air/targeting
 };
 
 // --- PHYSICS CLASS REPRESENTATION ---
@@ -437,6 +500,7 @@ class BeybladePhysics {
         this.damageFlash = 0; // collision flash effect duration
         this.invincibleTimer = 0; // Invincibility duration in seconds
         this.atkBoostTimer = 0; // Attack boost duration in seconds
+        this.hazardDamageCooldown = 0; // Hazard damage cooldown in seconds
     }
 
     update(dt, stadiumType, hazardZones) {
@@ -452,6 +516,12 @@ class BeybladePhysics {
         if (this.atkBoostTimer > 0) {
             this.atkBoostTimer -= dt * (16.666 / 1000);
             if (this.atkBoostTimer < 0) this.atkBoostTimer = 0;
+        }
+        
+        // Update hazard damage cooldown
+        if (this.hazardDamageCooldown > 0) {
+            this.hazardDamageCooldown -= dt * (16.666 / 1000);
+            if (this.hazardDamageCooldown < 0) this.hazardDamageCooldown = 0;
         }
         
         // 1. Air Friction & Deceleration
@@ -491,6 +561,10 @@ class BeybladePhysics {
                     // Reduce spin rapidly and push away (skip if invincible)
                     if (!(this.invincibleTimer > 0)) {
                         this.spin -= 0.35;
+                        if (this.hazardDamageCooldown <= 0) {
+                            game.particles.push(new DamageText(this.x, this.y, 0.35, '#00e5ff'));
+                            this.hazardDamageCooldown = 0.25;
+                        }
                     }
                     this.vx += (hzDx / hzDist) * 0.4;
                     this.vy += (hzDy / hzDist) * 0.4;
@@ -561,6 +635,7 @@ class BeybladePhysics {
                 if (!(this.invincibleTimer > 0)) {
                     const spinPenalty = this.player.isCritical ? 1.5 : 3.5;
                     this.spin -= spinPenalty;
+                    game.particles.push(new DamageText(this.x, this.y, spinPenalty, '#a0a0a0'));
                 }
                 
                 // Add wall scrape sound
@@ -638,6 +713,47 @@ class Shockwave {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.restore();
+    }
+}
+
+class DamageText {
+    constructor(x, y, amount, color, isCritical = false) {
+        this.x = x + (Math.random() - 0.5) * 15;
+        this.y = y - 12;
+        this.vy = -1.2 - Math.random() * 0.8;
+        this.vx = (Math.random() - 0.5) * 1.0;
+        this.amount = amount;
+        this.color = color || '#ff3300';
+        this.isCritical = isCritical;
+        this.life = 45;
+        this.maxLife = 45;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy *= 0.96;
+        this.vx *= 0.96;
+        this.life--;
+    }
+
+    draw(ctx) {
+        const alpha = this.life / this.maxLife;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        ctx.shadowBlur = this.isCritical ? 12 : 5;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = alpha;
+        
+        const fontSize = this.isCritical ? 20 : 13;
+        ctx.font = `bold ${fontSize}px Orbitron, sans-serif`;
+        
+        const displayVal = typeof this.amount === 'number' ? `-${this.amount.toFixed(1)}` : `-${this.amount}`;
+        ctx.fillText(displayVal, this.x, this.y);
         ctx.restore();
     }
 }
@@ -888,8 +1004,9 @@ function updateRulesText() {
     
     if (game.gameMode === 'item') {
         html += `
-            <li class="item-rule-highlight"><strong>【道具賽規則】</strong>戰鬥中場地會隨機產生道具（💊 治癒、🛡️ 無敵、📌 刺針）。陀螺碰撞即可拾取。</li>
-            <li class="item-rule-highlight">當拾取道具後，按鍵（如 P1 的 Q 鍵）即可<strong>手動發動道具</strong>來逆轉戰局！</li>
+            <li class="item-rule-highlight"><strong>【道具賽規則】</strong>戰鬥中場地會隨機產生道具（💊 治癒、🛡️ 無敵、📌 刺針、🚀 飛彈）。陀螺碰撞即可拾取。</li>
+            <li class="item-rule-highlight">每 10 秒會隨機發送一個道具給場上其中一位玩家，拾取/獲得後按鍵（如 P1 的 Q 鍵）即可<strong>手動發動道具</strong>！</li>
+            <li class="item-rule-highlight"><strong>🚀 飛彈</strong>：使用後在自身附近發送 10 枚炸彈進行連環轟炸，只會對範圍內的對手造成強力擊退與大量轉速耗損，且完全不會波及自己！</li>
         `;
     }
     
@@ -1108,18 +1225,102 @@ function usePlayerItem(playerId) {
         createSparks(b.x, b.y, '#00ff66', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#00ff66'));
     } else if (itemType === 'invincible') {
-        // 6 seconds of invincibility (doubled duration)
-        b.invincibleTimer = 6.0;
+        // 12 seconds of invincibility (extended two times)
+        b.invincibleTimer = 12.0;
         // Gold sparks visual effect
         createSparks(b.x, b.y, '#ffaa00', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ffaa00'));
     } else if (itemType === 'spike') {
-        // 6 seconds of attack boost (100% increased attack power - doubled duration and ability)
-        b.atkBoostTimer = 6.0;
+        // 12 seconds of attack boost (100% increased attack power - extended two times)
+        b.atkBoostTimer = 12.0;
         // Hot red sparks visual effect
         createSparks(b.x, b.y, '#ff3300', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ff3300'));
+    } else if (itemType === 'missile') {
+        // Spawn 10 bombs around oneself cascading in a ring pattern
+        for (let i = 0; i < 10; i++) {
+            const angle = (i * Math.PI * 2 / 10) + (Math.random() * 0.4 - 0.2);
+            const dist = 50 + Math.random() * 90; // 50 to 140px distance
+            let targetX = b.x + Math.cos(angle) * dist;
+            let targetY = b.y + Math.sin(angle) * dist;
+            
+            // Constrain targets to stay inside the stadium boundary
+            const distFromCenter = Math.hypot(targetX - CENTER_X, targetY - CENTER_Y);
+            const maxAllowed = STADIUM_RADIUS - 25;
+            if (distFromCenter > maxAllowed) {
+                const dx = targetX - CENTER_X;
+                const dy = targetY - CENTER_Y;
+                targetX = CENTER_X + (dx / distFromCenter) * maxAllowed;
+                targetY = CENTER_Y + (dy / distFromCenter) * maxAllowed;
+            }
+            
+            // Stagger the missile timings for a cascading chain explosion visual effect
+            const bombTimer = 0.6 + i * 0.15 + Math.random() * 0.08;
+            
+            game.missiles.push({
+                x: targetX,
+                y: targetY,
+                timer: bombTimer,
+                maxTimer: bombTimer,
+                playerId: playerId
+            });
+        }
     }
+}
+
+function triggerExplosion(x, y, excludePlayerId = null) {
+    sounds.playExplosion();
+    
+    // Create explosion visual effects
+    createSparks(x, y, '#ff4400', 20, 2.0);
+    createSparks(x, y, '#ffaa00', 20, 1.5);
+    createSparks(x, y, '#ffea00', 15, 1.0);
+    createSparks(x, y, '#ffffff', 10, 0.8);
+    
+    game.particles.push(new Shockwave(x, y, 110, '#ff3300'));
+    game.particles.push(new Shockwave(x, y, 80, '#ffaa00'));
+    game.particles.push(new Shockwave(x, y, 50, '#ffffff'));
+    
+    game.shakeIntensity = Math.min(game.shakeIntensity + 15, 25);
+    
+    // Impact on spinning beyblades
+    game.activeBeyblades.forEach(b => {
+        if (b.state !== 'spinning') return;
+        if (excludePlayerId !== null && b.player.id === excludePlayerId) return; // Do not damage the sender
+        
+        const dist = Math.hypot(b.x - x, b.y - y);
+        const explosionRadius = 90;
+        if (dist < explosionRadius) {
+            const forceFactor = (explosionRadius - dist) / explosionRadius;
+            
+            let pushX = b.x - x;
+            let pushY = b.y - y;
+            const pushDist = Math.hypot(pushX, pushY);
+            if (pushDist > 0) {
+                pushX /= pushDist;
+                pushY /= pushDist;
+            } else {
+                const angle = Math.random() * Math.PI * 2;
+                pushX = Math.cos(angle);
+                pushY = Math.sin(angle);
+            }
+            
+            const knockbackPower = forceFactor * 8.5;
+            b.vx += pushX * knockbackPower;
+            b.vy += pushY * knockbackPower;
+            
+            if (b.invincibleTimer <= 0) {
+                const spinLoss = b.maxSpin * 0.3 * forceFactor;
+                b.spin = Math.max(0, b.spin - spinLoss);
+                b.damageFlash = 8;
+                if (spinLoss > 0.05) {
+                    game.particles.push(new DamageText(b.x, b.y, spinLoss, '#ff5500', true));
+                }
+            }
+            
+            createSparks(b.x, b.y, b.player.color, 8, 1.2);
+        }
+    });
 }
 
 function triggerAIConsideration(aiPlayer) {
@@ -1193,6 +1394,8 @@ function transitionToBattle() {
     game.particles = [];
     game.items = []; // Reset items on stadium floor
     game.itemSpawnTimer = 3.0; // Spawns first item 3 seconds in
+    game.itemDistributeTimer = 10.0; // Spawns first random distribution at 10s
+    game.missiles = []; // Clear active missiles
     
     announcerOverlay.classList.remove('dimmed');
     announcerText.classList.remove('trigger'); // Clear announcer overlay
@@ -1393,8 +1596,9 @@ function updatePhysics(dt) {
         });
     }
 
-    // Item Spawning Logic
+    // Item Spawning & Distributing & Missile Update Logic
     if (game.gameMode === 'item') {
+        // 1. Spawning items on the floor
         game.itemSpawnTimer -= dt * (16.666 / 1000);
         if (game.itemSpawnTimer <= 0) {
             if (game.items.length < 2) {
@@ -1403,7 +1607,7 @@ function updatePhysics(dt) {
                 const x = CENTER_X + Math.cos(spawnAngle) * spawnDist;
                 const y = CENTER_Y + Math.sin(spawnAngle) * spawnDist;
                 const rand = Math.random();
-                const type = rand < 0.33 ? 'heal' : (rand < 0.66 ? 'invincible' : 'spike');
+                const type = rand < 0.25 ? 'heal' : (rand < 0.50 ? 'invincible' : (rand < 0.75 ? 'spike' : 'missile'));
                 game.items.push({
                     x,
                     y,
@@ -1413,6 +1617,42 @@ function updatePhysics(dt) {
                 });
             }
             game.itemSpawnTimer = 5.0; // Reset spawn timer to 5s
+        }
+
+        // 2. Distributing items to a random active player every 10s
+        game.itemDistributeTimer -= dt * (16.666 / 1000);
+        if (game.itemDistributeTimer <= 0) {
+            const spinningBodies = game.activeBeyblades.filter(b => b.state === 'spinning');
+            if (spinningBodies.length > 0) {
+                const targetBody = spinningBodies[Math.floor(Math.random() * spinningBodies.length)];
+                const itemTypes = ['heal', 'invincible', 'spike', 'missile'];
+                const randomItem = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+                
+                targetBody.player.item = randomItem;
+                sounds.playCollectItem(randomItem);
+                
+                let sparkColor = '#ffffff';
+                if (randomItem === 'heal') sparkColor = '#00ff66';
+                else if (randomItem === 'invincible') sparkColor = '#ffaa00';
+                else if (randomItem === 'spike') sparkColor = '#ff3300';
+                else if (randomItem === 'missile') sparkColor = '#df00ff';
+                
+                createSparks(targetBody.x, targetBody.y, sparkColor, 15, 1.2);
+                game.particles.push(new Shockwave(targetBody.x, targetBody.y, targetBody.radius * 2.5, sparkColor));
+            }
+            game.itemDistributeTimer = 10.0;
+        }
+
+        // 3. Update active missiles
+        if (game.missiles && game.missiles.length > 0) {
+            for (let i = game.missiles.length - 1; i >= 0; i--) {
+                const m = game.missiles[i];
+                m.timer -= dt * (16.666 / 1000);
+                if (m.timer <= 0) {
+                    triggerExplosion(m.x, m.y, m.playerId);
+                    game.missiles.splice(i, 1);
+                }
+            }
         }
     }
 
@@ -1432,6 +1672,7 @@ function updatePhysics(dt) {
                     let sparkColor = '#ffaa00';
                     if (item.type === 'heal') sparkColor = '#00ff66';
                     else if (item.type === 'spike') sparkColor = '#ff3300';
+                    else if (item.type === 'missile') sparkColor = '#df00ff';
                     createSparks(item.x, item.y, sparkColor, 8, 1.0);
                     game.items.splice(i, 1);
                 }
@@ -1462,6 +1703,14 @@ function updatePhysics(dt) {
                         return dist < 100;
                     });
                     if (closeOpponent) {
+                        shouldUse = true;
+                    }
+                } else if (b.player.item === 'missile') {
+                    // Use missile if there's any active opponent spinning
+                    const activeOpponents = game.activeBeyblades.some(other => {
+                        return other !== b && other.state === 'spinning';
+                    });
+                    if (activeOpponents) {
                         shouldUse = true;
                     }
                 }
@@ -1587,9 +1836,19 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         
         if (!(b1.invincibleTimer > 0)) {
             b1.spin -= p1Drain;
+            if (p1Drain > 0.05) {
+                const isCrit = (b2.player.isCritical || b2.atkBoostTimer > 0);
+                const color = isCrit ? '#ffaa00' : '#ff3355';
+                game.particles.push(new DamageText(b1.x, b1.y, p1Drain, color, isCrit));
+            }
         }
         if (!(b2.invincibleTimer > 0)) {
             b2.spin -= p2Drain;
+            if (p2Drain > 0.05) {
+                const isCrit = (b1.player.isCritical || b1.atkBoostTimer > 0);
+                const color = isCrit ? '#ffaa00' : '#ff3355';
+                game.particles.push(new DamageText(b2.x, b2.y, p2Drain, color, isCrit));
+            }
         }
 
         // Convert the transferred spin energy into tangential kick velocity
@@ -1661,6 +1920,9 @@ function updateHUDValues() {
             } else if (b.player.item === 'spike') {
                 btn.className = `btn-charge-circle has-item-spike`;
                 btn.innerHTML = `<span class="btn-badge">📌 刺針</span><span class="btn-key-hint">${b.player.keyLabel} (按)</span>`;
+            } else if (b.player.item === 'missile') {
+                btn.className = `btn-charge-circle has-item-missile`;
+                btn.innerHTML = `<span class="btn-badge">🚀 飛彈</span><span class="btn-key-hint">${b.player.keyLabel} (按)</span>`;
             } else {
                 btn.className = 'btn-charge-circle';
                 btn.innerHTML = `<span class="btn-badge" id="p${b.player.id}-btn-rpm">${Math.round(spinPct)}%</span><span class="btn-key-hint">${b.player.keyLabel}</span>`;
@@ -1967,6 +2229,89 @@ function renderStadiumBattleScene() {
         });
     }
 
+    // 2.3 Draw Active Missiles & Warning Areas
+    if (game.missiles && game.missiles.length > 0) {
+        game.missiles.forEach(missile => {
+            ctx.save();
+            
+            // Flashing red warning circle
+            const isFlashing = Math.floor(missile.timer * 10) % 2 === 0;
+            ctx.strokeStyle = isFlashing ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 0, 0, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'red';
+            
+            // Draw crosshair/targeting circle at ground target
+            ctx.beginPath();
+            ctx.arc(missile.x, missile.y, 30, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Shrinking progress circle
+            const progress = missile.timer / missile.maxTimer;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.beginPath();
+            ctx.arc(missile.x, missile.y, 30 * progress, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Crosshair lines
+            ctx.beginPath();
+            ctx.moveTo(missile.x - 40, missile.y);
+            ctx.lineTo(missile.x + 40, missile.y);
+            ctx.moveTo(missile.x, missile.y - 40);
+            ctx.lineTo(missile.x, missile.y + 40);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+            ctx.stroke();
+            
+            // Draw falling projectile
+            if (progress > 0) {
+                const dropHeight = 400 * progress;
+                const missileX = missile.x;
+                const missileY = missile.y - dropHeight;
+                
+                // Fire trail
+                const grad = ctx.createLinearGradient(missileX, missileY, missileX, missileY - 30);
+                grad.addColorStop(0, '#ffcc00');
+                grad.addColorStop(0.5, '#ff3300');
+                grad.addColorStop(1, 'rgba(255, 51, 0, 0)');
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(missileX - 6, missileY);
+                ctx.lineTo(missileX + 6, missileY);
+                ctx.lineTo(missileX, missileY - 40);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Missile body
+                ctx.fillStyle = '#666666';
+                ctx.strokeStyle = '#333333';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(missileX - 4, missileY - 15);
+                ctx.lineTo(missileX + 4, missileY - 15);
+                ctx.lineTo(missileX + 4, missileY);
+                ctx.lineTo(missileX, missileY + 10);
+                ctx.lineTo(missileX - 4, missileY);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Fins
+                ctx.fillStyle = '#ff3300';
+                ctx.beginPath();
+                ctx.moveTo(missileX - 4, missileY - 15);
+                ctx.lineTo(missileX - 8, missileY - 18);
+                ctx.lineTo(missileX - 4, missileY - 5);
+                ctx.moveTo(missileX + 4, missileY - 15);
+                ctx.lineTo(missileX + 8, missileY - 18);
+                ctx.lineTo(missileX + 4, missileY - 5);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        });
+    }
+
     // 2.5 Draw Items on the stadium floor
     if (game.items && game.items.length > 0) {
         game.items.forEach(item => {
@@ -1976,9 +2321,9 @@ function renderStadiumBattleScene() {
             const drawRadius = item.radius + pulse;
             
             ctx.shadowBlur = 15;
-            ctx.shadowColor = item.type === 'heal' ? '#00ff66' : (item.type === 'invincible' ? '#ffaa00' : '#ff3300');
-            ctx.fillStyle = item.type === 'heal' ? 'rgba(0, 255, 102, 0.2)' : (item.type === 'invincible' ? 'rgba(255, 170, 0, 0.2)' : 'rgba(255, 51, 0, 0.2)');
-            ctx.strokeStyle = item.type === 'heal' ? '#00ff66' : (item.type === 'invincible' ? '#ffaa00' : '#ff3300');
+            ctx.shadowColor = item.type === 'heal' ? '#00ff66' : (item.type === 'invincible' ? '#ffaa00' : (item.type === 'spike' ? '#ff3300' : '#df00ff'));
+            ctx.fillStyle = item.type === 'heal' ? 'rgba(0, 255, 102, 0.2)' : (item.type === 'invincible' ? 'rgba(255, 170, 0, 0.2)' : (item.type === 'spike' ? 'rgba(255, 51, 0, 0.2)' : 'rgba(223, 0, 255, 0.2)'));
+            ctx.strokeStyle = item.type === 'heal' ? '#00ff66' : (item.type === 'invincible' ? '#ffaa00' : (item.type === 'spike' ? '#ff3300' : '#df00ff'));
             ctx.lineWidth = 2;
             
             // Outer pulsing ring
@@ -2019,6 +2364,23 @@ function renderStadiumBattleScene() {
                 ctx.lineTo(item.x - 2, item.y + 2);
                 ctx.lineTo(item.x - 8, item.y);
                 ctx.lineTo(item.x - 2, item.y - 2);
+                ctx.closePath();
+                ctx.fill();
+            } else if (item.type === 'missile') {
+                ctx.fillStyle = '#df00ff';
+                // Draw a small rocket shape
+                ctx.beginPath();
+                ctx.moveTo(item.x, item.y - 7); // tip
+                ctx.lineTo(item.x + 3, item.y - 3);
+                ctx.lineTo(item.x + 3, item.y + 4);
+                ctx.lineTo(item.x + 5, item.y + 7); // right fin
+                ctx.lineTo(item.x + 2, item.y + 7);
+                ctx.lineTo(item.x + 2, item.y + 5);
+                ctx.lineTo(item.x - 2, item.y + 5);
+                ctx.lineTo(item.x - 2, item.y + 7);
+                ctx.lineTo(item.x - 5, item.y + 7); // left fin
+                ctx.lineTo(item.x - 3, item.y + 4);
+                ctx.lineTo(item.x - 3, item.y - 3);
                 ctx.closePath();
                 ctx.fill();
             }
