@@ -433,6 +433,47 @@ class SoundManager {
         osc.start(now);
         osc.stop(now + 0.6);
     }
+
+    playLotteryTick() {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.setValueAtTime(400, now + 0.03);
+        
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+    }
+    
+    playLotteryWin() {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            
+            gain.gain.setValueAtTime(0.08, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.4);
+            
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.4);
+        });
+    }
 }
 
 const sounds = new SoundManager();
@@ -1086,7 +1127,7 @@ function updateRulesText() {
     let html = `
         <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
         <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量和撞擊力呈指數級飆升，高低能量差距極大！</li>
-        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>1.5 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按下您的操作按鍵（如 P1 的 Q 鍵）即可啟動！</li>
+        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>10 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按下您的操作按鍵（如 P1 的 Q 鍵）即可啟動！</li>
         <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
         <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
     `;
@@ -1243,6 +1284,14 @@ function transitionToPrepare() {
 
     // Hide timer and modal overlay during preparation
     document.getElementById('battle-timer-container').classList.add('timer-hidden');
+    const itemLotteryContainer = document.getElementById('item-lottery-container');
+    if (itemLotteryContainer) {
+        itemLotteryContainer.classList.add('item-timer-hidden');
+    }
+    const lotteryOverlay = document.getElementById('lottery-overlay');
+    if (lotteryOverlay) {
+        lotteryOverlay.classList.add('hidden');
+    }
     const roundModal = document.getElementById('round-modal');
     if (roundModal) roundModal.classList.add('hidden');
 
@@ -1311,13 +1360,13 @@ function triggerGiantSkill(b) {
     
     // Scale stats
     b.radius = b.baseRadius * 3;
-    b.mass = b.baseMass * 1.5;
-    b.force = b.baseForce * 1.5;
-    b.bounce = b.baseBounce * 1.5;
+    b.mass = b.baseMass * 10;
+    b.force = b.baseForce * 10;
+    b.bounce = b.baseBounce * 10;
     
-    // Spin stats: boost spin and maxSpin by 1.5x
-    b.maxSpin = b.originalMaxSpin * 1.5;
-    b.spin = Math.min(b.spin * 1.5, b.maxSpin);
+    // Spin stats: boost spin and maxSpin by 10x
+    b.maxSpin = b.originalMaxSpin * 10;
+    b.spin = Math.min(b.spin * 10, b.maxSpin);
     
     // Play activation sound
     sounds.playGiantActivate();
@@ -1327,7 +1376,7 @@ function triggerGiantSkill(b) {
     game.particles.push(new Shockwave(b.x, b.y, b.radius * 1.8, '#ffffff'));
     
     // Damage text popup
-    game.particles.push(new DamageText(b.x, b.y, "極限巨化!", b.player.color, true));
+    game.particles.push(new DamageText(b.x, b.y, "十倍巨化!", b.player.color, true));
     
     // Create large spray of sparks
     createSparks(b.x, b.y, b.player.color, 30, 2.0);
@@ -1545,6 +1594,25 @@ function transitionToBattle() {
     game.itemSpawnTimer = 3.0; // Spawns first item 3 seconds in
     game.itemDistributeTimer = 10.0; // Spawns first random distribution at 10s
     game.missiles = []; // Clear active missiles
+    
+    // Reset item lottery state
+    game.isDrawingItem = false;
+    const itemLotteryContainer = document.getElementById('item-lottery-container');
+    if (itemLotteryContainer) {
+        if (game.gameMode === 'item') {
+            itemLotteryContainer.classList.remove('item-timer-hidden');
+            const progressFill = document.getElementById('item-timer-progress-fill');
+            if (progressFill) progressFill.style.width = '100%';
+            const timerVal = document.getElementById('item-lottery-timer-val');
+            if (timerVal) timerVal.innerText = '10.0s';
+        } else {
+            itemLotteryContainer.classList.add('item-timer-hidden');
+        }
+    }
+    const lotteryOverlay = document.getElementById('lottery-overlay');
+    if (lotteryOverlay) {
+        lotteryOverlay.classList.add('hidden');
+    }
     
     announcerOverlay.classList.remove('dimmed');
     announcerText.classList.remove('trigger'); // Clear announcer overlay
@@ -1768,28 +1836,183 @@ function updatePhysics(dt) {
             game.itemSpawnTimer = 5.0; // Reset spawn timer to 5s
         }
 
-        // 2. Distributing items to a random active player every 10s
-        game.itemDistributeTimer -= dt * (16.666 / 1000);
-        if (game.itemDistributeTimer <= 0) {
-            const spinningBodies = game.activeBeyblades.filter(b => b.state === 'spinning');
-            if (spinningBodies.length > 0) {
-                const targetBody = spinningBodies[Math.floor(Math.random() * spinningBodies.length)];
-                const itemTypes = ['heal', 'invincible', 'spike', 'missile'];
-                const randomItem = itemTypes[Math.floor(Math.random() * itemTypes.length)];
-                
-                targetBody.player.item = randomItem;
-                sounds.playCollectItem(randomItem);
-                
-                let sparkColor = '#ffffff';
-                if (randomItem === 'heal') sparkColor = '#00ff66';
-                else if (randomItem === 'invincible') sparkColor = '#ffaa00';
-                else if (randomItem === 'spike') sparkColor = '#ff3300';
-                else if (randomItem === 'missile') sparkColor = '#df00ff';
-                
-                createSparks(targetBody.x, targetBody.y, sparkColor, 15, 1.2);
-                game.particles.push(new Shockwave(targetBody.x, targetBody.y, targetBody.radius * 2.5, sparkColor));
+        // 2. Distributing items to a random active player every 10s via a lottery sequence
+        const deltaSeconds = dt * (16.666 / 1000);
+        
+        // Update item lottery timer HUD
+        const itemLotteryTimerValEl = document.getElementById('item-lottery-timer-val');
+        const itemTimerProgressFillEl = document.getElementById('item-timer-progress-fill');
+        
+        if (game.isDrawingItem) {
+            if (itemLotteryTimerValEl) itemLotteryTimerValEl.innerText = 'CHOOSE!';
+            if (itemTimerProgressFillEl) itemTimerProgressFillEl.style.width = '0%';
+        } else {
+            const displayTime = Math.max(0, game.itemDistributeTimer);
+            if (itemLotteryTimerValEl) itemLotteryTimerValEl.innerText = `${displayTime.toFixed(1)}s`;
+            if (itemTimerProgressFillEl) {
+                const pct = (displayTime / 10.0) * 100;
+                itemTimerProgressFillEl.style.width = `${pct}%`;
             }
-            game.itemDistributeTimer = 10.0;
+        }
+
+        if (!game.isDrawingItem) {
+            game.itemDistributeTimer -= deltaSeconds;
+            if (game.itemDistributeTimer <= 0) {
+                const spinningBodies = game.activeBeyblades.filter(b => b.state === 'spinning');
+                if (spinningBodies.length > 0) {
+                    // Start drawing sequence
+                    game.isDrawingItem = true;
+                    
+                    const targetBody = spinningBodies[Math.floor(Math.random() * spinningBodies.length)];
+                    const itemTypes = ['heal', 'invincible', 'spike', 'missile'];
+                    const randomItem = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+                    
+                    game.drawWinnerId = targetBody.player.id;
+                    game.drawWinnerName = targetBody.player.name;
+                    game.drawWinnerColor = targetBody.player.color;
+                    game.drawItem = randomItem;
+                    
+                    game.drawTimer = 0;
+                    game.drawLastTickTime = 0;
+                    
+                    // Show overlay
+                    const overlay = document.getElementById('lottery-overlay');
+                    if (overlay) overlay.classList.remove('hidden');
+                    
+                    // Reset reel styles
+                    const playerReel = document.getElementById('lottery-player-reel');
+                    const itemReel = document.getElementById('lottery-item-reel');
+                    const statusText = document.getElementById('lottery-status-text');
+                    
+                    if (playerReel) {
+                        playerReel.innerHTML = '<div class="reel-item">???</div>';
+                        playerReel.querySelector('.reel-item').classList.remove('locked');
+                        playerReel.querySelector('.reel-item').style.color = '#fff';
+                        playerReel.querySelector('.reel-item').style.textShadow = '0 0 5px rgba(255,255,255,0.5)';
+                    }
+                    if (itemReel) {
+                        itemReel.innerHTML = '<div class="reel-item">???</div>';
+                        itemReel.querySelector('.reel-item').classList.remove('locked');
+                        itemReel.querySelector('.reel-item').style.color = '#fff';
+                        itemReel.querySelector('.reel-item').style.textShadow = '0 0 5px rgba(255,255,255,0.5)';
+                    }
+                    if (statusText) {
+                        statusText.innerText = '系統配對中...';
+                        statusText.className = 'lottery-status';
+                    }
+                } else {
+                    // No active spinner, reset timer
+                    game.itemDistributeTimer = 10.0;
+                }
+            }
+        } else {
+            game.drawTimer += deltaSeconds;
+            
+            const playerReel = document.getElementById('lottery-player-reel');
+            const itemReel = document.getElementById('lottery-item-reel');
+            const statusText = document.getElementById('lottery-status-text');
+            
+            const activeSpinners = game.activeBeyblades.filter(b => b.state === 'spinning');
+            
+            // Map item types to display strings
+            const itemMap = {
+                'heal': '💊 治癒',
+                'invincible': '🛡️ 無敵',
+                'spike': '📌 刺針',
+                'missile': '🚀 飛彈'
+            };
+            const itemColors = {
+                'heal': '#00ff66',
+                'invincible': '#ffaa00',
+                'spike': '#ff3300',
+                'missile': '#df00ff'
+            };
+            
+            // 1. Tick/rolling sound and visual changes
+            if (game.drawTimer < 1.4) {
+                // Determine tick interval based on time elapsed (slows down)
+                const tickInterval = 0.05 + (game.drawTimer / 1.4) * 0.15;
+                if (game.drawTimer - game.drawLastTickTime >= tickInterval) {
+                    game.drawLastTickTime = game.drawTimer;
+                    sounds.playLotteryTick();
+                    
+                    // Show random player name
+                    if (playerReel && activeSpinners.length > 0) {
+                        const randBody = activeSpinners[Math.floor(Math.random() * activeSpinners.length)];
+                        playerReel.innerHTML = `<div class="reel-item" style="color: ${randBody.player.color}; text-shadow: 0 0 8px ${randBody.player.glowColor || 'rgba(255,255,255,0.4)'}">${randBody.player.name}</div>`;
+                    }
+                    
+                    // Show random item
+                    if (itemReel) {
+                        const items = ['heal', 'invincible', 'spike', 'missile'];
+                        const randItem = items[Math.floor(Math.random() * items.length)];
+                        itemReel.innerHTML = `<div class="reel-item" style="color: ${itemColors[randItem]}; text-shadow: 0 0 8px ${itemColors[randItem]}">${itemMap[randItem]}</div>`;
+                    }
+                }
+            }
+            
+            // 2. Lock winner player at 1.4s
+            if (game.drawTimer >= 1.4 && game.drawTimer < 1.8) {
+                if (playerReel && !playerReel.querySelector('.reel-item').classList.contains('locked')) {
+                    sounds.playCollectItem('heal'); // play a select sound
+                    playerReel.innerHTML = `<div class="reel-item locked" style="color: ${game.drawWinnerColor}; text-shadow: 0 0 12px ${game.drawWinnerColor}">${game.drawWinnerName}</div>`;
+                    if (statusText) statusText.innerText = `選中：${game.drawWinnerName}`;
+                }
+                
+                // Keep item reel rolling rapidly
+                if (game.drawTimer - game.drawLastTickTime >= 0.08) {
+                    game.drawLastTickTime = game.drawTimer;
+                    sounds.playLotteryTick();
+                    if (itemReel) {
+                        const items = ['heal', 'invincible', 'spike', 'missile'];
+                        const randItem = items[Math.floor(Math.random() * items.length)];
+                        itemReel.innerHTML = `<div class="reel-item" style="color: ${itemColors[randItem]}; text-shadow: 0 0 8px ${itemColors[randItem]}">${itemMap[randItem]}</div>`;
+                    }
+                }
+            }
+            
+            // 3. Lock item at 1.8s
+            if (game.drawTimer >= 1.8 && game.drawTimer < 2.0) {
+                if (itemReel && !itemReel.querySelector('.reel-item').classList.contains('locked')) {
+                    sounds.playCollectItem(game.drawItem); // play item-specific select sound
+                    itemReel.innerHTML = `<div class="reel-item locked" style="color: ${itemColors[game.drawItem]}; text-shadow: 0 0 12px ${itemColors[game.drawItem]}">${itemMap[game.drawItem]}</div>`;
+                    if (statusText) statusText.innerText = `獲得：${itemMap[game.drawItem]}`;
+                }
+            }
+            
+            // 4. Trigger Jackpot win effects at 2.0s
+            if (game.drawTimer >= 2.0 && game.drawTimer < 3.2) {
+                // If we haven't given the item yet, do it now
+                if (game.drawWinnerId !== null) {
+                    const targetBody = game.activeBeyblades.find(b => b.player.id === game.drawWinnerId);
+                    if (targetBody && targetBody.state === 'spinning') {
+                        targetBody.player.item = game.drawItem;
+                        
+                        let sparkColor = itemColors[game.drawItem];
+                        createSparks(targetBody.x, targetBody.y, sparkColor, 18, 1.3);
+                        game.particles.push(new Shockwave(targetBody.x, targetBody.y, targetBody.radius * 3.0, sparkColor));
+                    }
+                    
+                    sounds.playLotteryWin();
+                    
+                    if (statusText) {
+                        statusText.innerText = `恭喜 ${game.drawWinnerName} 獲得 ${itemMap[game.drawItem]}!`;
+                        statusText.className = 'lottery-status success';
+                    }
+                    
+                    // Mark as given
+                    game.drawWinnerId = null;
+                }
+            }
+            
+            // 5. Hide lottery overlay at 3.2s
+            if (game.drawTimer >= 3.2) {
+                const overlay = document.getElementById('lottery-overlay');
+                if (overlay) overlay.classList.add('hidden');
+                
+                game.isDrawingItem = false;
+                game.itemDistributeTimer = 10.0;
+            }
         }
 
         // 3. Update active missiles
@@ -2151,6 +2374,13 @@ function checkBattleEndCondition() {
         game.state = 'round_over';
         cancelAnimationFrame(game.animationFrameId);
 
+        // Hide lottery components
+        const itemLotteryContainer = document.getElementById('item-lottery-container');
+        if (itemLotteryContainer) itemLotteryContainer.classList.add('item-timer-hidden');
+        const lotteryOverlay = document.getElementById('lottery-overlay');
+        if (lotteryOverlay) lotteryOverlay.classList.add('hidden');
+        game.isDrawingItem = false;
+
         let winnerBody = null;
         let winnerPlayer = null;
         if (spinningList.length === 1) {
@@ -2172,6 +2402,13 @@ function handleBattleTimeout() {
     game.state = 'round_over';
     cancelAnimationFrame(game.animationFrameId);
     sounds.stopAllHums();
+
+    // Hide lottery components
+    const itemLotteryContainer = document.getElementById('item-lottery-container');
+    if (itemLotteryContainer) itemLotteryContainer.classList.add('item-timer-hidden');
+    const lotteryOverlay = document.getElementById('lottery-overlay');
+    if (lotteryOverlay) lotteryOverlay.classList.add('hidden');
+    game.isDrawingItem = false;
 
     // Time's up! Find all active spinners and declare the one with the highest RPM (spin) as winner
     const spinningList = game.activeBeyblades.filter(b => b.state === 'spinning');
@@ -2363,6 +2600,9 @@ function cleanupBattlePhysics() {
     if (game.animationFrameId) {
         cancelAnimationFrame(game.animationFrameId);
     }
+    game.isDrawingItem = false;
+    const overlay = document.getElementById('lottery-overlay');
+    if (overlay) overlay.classList.add('hidden');
 }
 
 // --- RENDER FUNCTIONS (Canvas) ---

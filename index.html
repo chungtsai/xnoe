@@ -190,7 +190,7 @@
                         <ul id="game-rules-list">
                             <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
                             <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量和撞擊力呈指數級飆升，高低能量差距極大！</li>
-                            <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>1.5 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按下您的操作按鍵（如 P1 的 Q 鍵）即可啟動！</li>
+                            <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>10 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按下您的操作按鍵（如 P1 的 Q 鍵）即可啟動！</li>
                             <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
                             <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
                         </ul>
@@ -218,6 +218,26 @@
                             <span class="item-icon">🔄</span> 放棄重設
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Lottery Draw Overlay (Placed here to avoid clipping and blocking arena) -->
+            <div id="lottery-overlay" class="lottery-overlay hidden">
+                <div class="lottery-box">
+                    <div class="lottery-info">
+                        <div class="lottery-title">🎁 NEON DROPS</div>
+                        <div class="lottery-subtitle">幸運道具隨機抽籤中...</div>
+                    </div>
+                    <div class="lottery-reels">
+                        <div class="lottery-reel player-reel" id="lottery-player-reel">
+                            <div class="reel-item">???</div>
+                        </div>
+                        <div class="reel-separator">➔</div>
+                        <div class="lottery-reel item-reel" id="lottery-item-reel">
+                            <div class="reel-item">???</div>
+                        </div>
+                    </div>
+                    <div class="lottery-status" id="lottery-status-text">系統配對中...</div>
                 </div>
             </div>
 
@@ -316,10 +336,25 @@
 
                 <!-- MIDDLE: Arena Area -->
                 <div class="arena-container">
-                    <!-- Battle Timer Display -->
-                    <div id="battle-timer-container" class="timer-hidden">
-                        <span class="timer-label">BATTLE TIME</span>
-                        <span id="battle-timer-val">99.0</span>
+                    <!-- Timers Row Wrapper -->
+                    <div class="timers-row">
+                        <!-- Battle Timer Display -->
+                        <div id="battle-timer-container" class="timer-hidden">
+                            <span class="timer-label">BATTLE TIME</span>
+                            <span id="battle-timer-val">99.0</span>
+                        </div>
+
+                        <!-- Item Lottery Timer Display -->
+                        <div id="item-lottery-container" class="item-timer-hidden">
+                            <div class="item-timer-header">
+                                <span class="item-timer-icon">🎁</span>
+                                <span class="item-timer-label">下一波道具抽籤</span>
+                            </div>
+                            <div class="item-timer-bar-wrapper">
+                                <div id="item-timer-progress-fill" class="item-timer-progress-fill" style="width: 100%;"></div>
+                            </div>
+                            <span id="item-lottery-timer-val">10.0s</span>
+                        </div>
                     </div>
 
                     <div class="arena-wrapper">

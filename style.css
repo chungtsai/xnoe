@@ -1686,3 +1686,228 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     0% { text-shadow: 0 0 5px rgba(0, 240, 255, 0.5); }
     100% { text-shadow: 0 0 15px rgba(0, 240, 255, 1); }
 }
+
+/* ==================== TIMERS ROW AND ITEM COUNTDOWN SYSTEM ==================== */
+.timers-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    justify-content: center;
+}
+
+#item-lottery-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(8, 12, 28, 0.65);
+    border: 1px solid rgba(255, 170, 0, 0.2);
+    padding: 6px 14px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 170, 0, 0.1);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    width: 140px;
+}
+
+#item-lottery-container.item-timer-hidden {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    display: none !important;
+}
+
+.item-timer-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 3px;
+}
+
+.item-timer-icon {
+    font-size: 0.8rem;
+    animation: giftBounce 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes giftBounce {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(-2px) scale(1.1); }
+}
+
+.item-timer-label {
+    font-family: var(--font-heading);
+    font-size: 0.6rem;
+    color: #ffaa00;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.item-timer-bar-wrapper {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.item-timer-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff9900, #ffaa00);
+    box-shadow: 0 0 6px #ffaa00;
+    width: 100%;
+    transition: width 0.1s linear;
+}
+
+#item-lottery-timer-val {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255, 170, 0, 0.5);
+}
+
+/* ==================== HOLOGRAPHIC LOTTERY OVERLAY ==================== */
+.lottery-overlay {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translate(-50%, 0);
+    width: 600px;
+    max-width: 95vw;
+    background: rgba(8, 12, 28, 0.96);
+    border: 2px solid #ffcc00;
+    box-shadow: 0 0 25px rgba(255, 204, 0, 0.45), inset 0 0 15px rgba(255, 204, 0, 0.15);
+    border-radius: 12px;
+    z-index: 105; /* Above battle scoreboard header (100) */
+    padding: 8px 16px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: lotteryEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+}
+
+.lottery-overlay.hidden {
+    display: none !important;
+}
+
+@keyframes lotteryEnter {
+    0% { transform: translate(-50%, -20px) scale(0.95); opacity: 0; }
+    100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+.lottery-box {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    width: 100%;
+}
+
+.lottery-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 120px;
+    text-align: left;
+}
+
+.lottery-title {
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #ffcc00;
+    text-shadow: 0 0 8px rgba(255, 204, 0, 0.6);
+    letter-spacing: 1px;
+}
+
+.lottery-subtitle {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
+
+.lottery-reels {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+}
+
+.lottery-reel {
+    width: 125px;
+    height: 34px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.player-reel {
+    border-color: rgba(0, 240, 255, 0.3);
+}
+
+.item-reel {
+    border-color: rgba(223, 0, 255, 0.3);
+}
+
+.reel-item {
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255,255,255,0.5);
+    animation: reelScroll 0.08s infinite linear;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.reel-item.locked {
+    animation: none !important;
+    font-size: 0.85rem;
+    transform: scale(1.05);
+    transition: all 0.15s ease;
+}
+
+@keyframes reelScroll {
+    0% { transform: translateY(-10px); opacity: 0.3; }
+    50% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(10px); opacity: 0.3; }
+}
+
+.reel-separator {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.lottery-status {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    min-width: 170px;
+    text-align: right;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.lottery-status.success {
+    color: #ffcc00;
+    text-shadow: 0 0 10px rgba(255, 204, 0, 0.8);
+    font-size: 0.8rem;
+    animation: statusPulse 0.4s infinite alternate ease-in-out;
+}
+
+@keyframes statusPulse {
+    0% { transform: scale(0.98); }
+    100% { transform: scale(1.02); }
+}
