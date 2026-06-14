@@ -389,6 +389,24 @@ class SoundManager {
         }
     }
 
+    playDefense() {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.3);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+    }
+
     playExplosion() {
         if (this.isMuted) return;
         this.init();
@@ -530,10 +548,10 @@ const game = {
     battleTimer: 99.0,
     gameMode: 'normal',   // normal, item
     players: [
-        { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', giantKey: 'e', giantKeyLabel: 'E', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
-        { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', giantKey: 'o', giantKeyLabel: 'O', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
-        { id: 3, name: '綠色裂空', type: 'none', beybladeType: 'stamina', color: '#00ff66', glowColor: 'rgba(0, 255, 102, 0.4)', key: 'z', keyLabel: 'Z', giantKey: 'x', giantKeyLabel: 'X', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
-        { id: 4, name: '黃色雷光', type: 'none', beybladeType: 'balance', color: '#ffcc00', glowColor: 'rgba(255, 204, 0, 0.4)', key: 'm', keyLabel: 'M', giantKey: 'n', giantKeyLabel: 'N', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false }
+        { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', giantKey: 'e', giantKeyLabel: 'E', defendKey: 'w', defendKeyLabel: 'W', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
+        { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', giantKey: 'o', giantKeyLabel: 'O', defendKey: 'i', defendKeyLabel: 'I', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
+        { id: 3, name: '綠色裂空', type: 'none', beybladeType: 'stamina', color: '#00ff66', glowColor: 'rgba(0, 255, 102, 0.4)', key: 'z', keyLabel: 'Z', giantKey: 'x', giantKeyLabel: 'X', defendKey: 'c', defendKeyLabel: 'C', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
+        { id: 4, name: '黃色雷光', type: 'none', beybladeType: 'balance', color: '#ffcc00', glowColor: 'rgba(255, 204, 0, 0.4)', key: 'm', keyLabel: 'M', giantKey: 'n', giantKeyLabel: 'N', defendKey: 'b', defendKeyLabel: 'B', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false }
     ],
     stadiumType: 'standard', // standard, hazard, vortex
     countdownVal: 3,
@@ -590,6 +608,7 @@ class BeybladePhysics {
         this.invincibleTimer = 0; // Invincibility duration in seconds
         this.atkBoostTimer = 0; // Attack boost duration in seconds
         this.hazardDamageCooldown = 0; // Hazard damage cooldown in seconds
+        this.defendCooldown = 0; // Defense cooldown in seconds
         
         this.giantTimer = 0; // Giant mode duration in seconds
     }
@@ -613,6 +632,12 @@ class BeybladePhysics {
         if (this.hazardDamageCooldown > 0) {
             this.hazardDamageCooldown -= dt * (16.666 / 1000);
             if (this.hazardDamageCooldown < 0) this.hazardDamageCooldown = 0;
+        }
+
+        // Update defend cooldown timer
+        if (this.defendCooldown > 0) {
+            this.defendCooldown -= dt * (16.666 / 1000);
+            if (this.defendCooldown < 0) this.defendCooldown = 0;
         }
         
         // Update giant mode timer
@@ -996,9 +1021,19 @@ function setupUIListeners() {
                 }
             });
         }
+
+        const defendBtn = document.getElementById(`btn-defend-p${i}`);
+        if (defendBtn) {
+            defendBtn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if (game.state === STATE_BATTLE) {
+                    usePlayerDefense(i);
+                }
+            });
+        }
     }
 
-    // Keyboard bindings for charging, item usage, and giant skill
+    // Keyboard bindings for charging, item usage, giant skill, and defense
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
         if (game.state === STATE_PREPARE) {
@@ -1014,6 +1049,8 @@ function setupUIListeners() {
                         usePlayerItem(p.id);
                     } else if (p.giantKey === key) {
                         usePlayerGiantSkill(p.id);
+                    } else if (p.defendKey === key) {
+                        usePlayerDefense(p.id);
                     }
                 }
             });
@@ -1127,7 +1164,8 @@ function updateRulesText() {
     let html = `
         <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
         <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量和撞擊力呈指數級飆升，高低能量差距極大！</li>
-        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>10 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按下您的操作按鍵（如 P1 的 Q 鍵）即可啟動！</li>
+        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>10 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按鍵（如 P1 的 <strong>E</strong> 鍵）即可啟動！</li>
+        <li><strong>🛡️ 瞬間防禦</strong>：在戰鬥中隨時按防禦鍵（如 P1 的 <strong>W</strong> 鍵），可發動 <strong>0.5 秒無敵盾</strong>，期間免受碰撞傷害與邊界損耗，CD時間為 <strong>10 秒</strong>！</li>
         <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
         <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
     `;
@@ -1260,6 +1298,12 @@ function transitionToPrepare() {
         const giantBtn = document.getElementById(`btn-giant-p${p.id}`);
         if (giantBtn) {
             giantBtn.classList.add('hidden');
+        }
+
+        // Hide defend button during setup/preparation
+        const defendBtn = document.getElementById(`btn-defend-p${p.id}`);
+        if (defendBtn) {
+            defendBtn.classList.add('hidden');
         }
 
         // Update score dots classes
@@ -1398,6 +1442,25 @@ function usePlayerGiantSkill(playerId) {
         if (giantBtn) {
             giantBtn.classList.add('hidden');
         }
+    }
+}
+
+function usePlayerDefense(playerId) {
+    const p = game.players.find(x => x.id === playerId);
+    if (!p || p.type === 'none') return;
+    
+    const b = game.activeBeyblades.find(x => x.player.id === playerId);
+    if (!b || b.state !== 'spinning') return;
+
+    if (b.defendCooldown <= 0) {
+        b.defendCooldown = 10.0; // 10 seconds cooldown
+        b.invincibleTimer = 0.5; // 0.5 seconds invincibility
+        
+        sounds.playDefense();
+        
+        // Gold/Amber sparks visual effect
+        createSparks(b.x, b.y, '#ffcc00', 20, 1.5);
+        game.particles.push(new Shockwave(b.x, b.y, b.radius * 2.5, '#ffcc00'));
     }
 }
 
@@ -2060,6 +2123,24 @@ function updatePhysics(dt) {
                 }
             }
 
+            // AI Decision to use Defense Skill (available in all game modes)
+            if (b.player.type === 'ai' && b.defendCooldown <= 0) {
+                let shouldUseDefense = false;
+                // AI uses defense if there's any active opponent very close
+                const veryCloseOpponent = game.activeBeyblades.some(other => {
+                    if (other === b || other.state !== 'spinning') return false;
+                    const dist = Math.hypot(other.x - b.x, other.y - b.y);
+                    return dist < (b.radius + other.radius + 30); // within 30px of collision
+                });
+                if (veryCloseOpponent) {
+                    shouldUseDefense = true;
+                }
+                
+                if (shouldUseDefense) {
+                    usePlayerDefense(b.player.id);
+                }
+            }
+
             if (game.gameMode === 'item') {
                 // 1. Item Collection check
                 for (let i = game.items.length - 1; i >= 0; i--) {
@@ -2316,6 +2397,23 @@ function updateHUDValues() {
                 giantBtn.classList.remove('hidden');
             } else {
                 giantBtn.classList.add('hidden');
+            }
+        }
+
+        // Update Defense button visibility and CD state
+        const defendBtn = document.getElementById(`btn-defend-p${b.player.id}`);
+        if (defendBtn) {
+            if (b.state === 'spinning') {
+                defendBtn.classList.remove('hidden');
+                if (b.defendCooldown > 0) {
+                    defendBtn.classList.add('cooldown');
+                    defendBtn.innerHTML = `<span class="btn-badge">🛡️ ${b.defendCooldown.toFixed(1)}s</span>`;
+                } else {
+                    defendBtn.classList.remove('cooldown');
+                    defendBtn.innerHTML = `<span class="btn-badge">🛡️ 防禦</span><span class="btn-key-hint">${b.player.defendKeyLabel}</span>`;
+                }
+            } else {
+                defendBtn.classList.add('hidden');
             }
         }
 

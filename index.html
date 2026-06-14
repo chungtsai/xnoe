@@ -36,7 +36,7 @@
                             <div class="control-group">
                                 <label>玩家類型</label>
                                 <select class="player-type-select" id="p1-type">
-                                    <option value="human" selected>玩家 1 (按鍵: Q)</option>
+                                    <option value="human" selected>玩家 1 (Q:集氣/道具, W:防禦, E:巨化)</option>
                                     <option value="ai">AI 機器人</option>
                                     <option value="none">停用</option>
                                 </select>
@@ -68,7 +68,7 @@
                             <div class="control-group">
                                 <label>玩家類型</label>
                                 <select class="player-type-select" id="p2-type">
-                                    <option value="human">玩家 2 (按鍵: P)</option>
+                                    <option value="human">玩家 2 (P:集氣/道具, I:防禦, O:巨化)</option>
                                     <option value="ai" selected>AI 機器人</option>
                                     <option value="none">停用</option>
                                 </select>
@@ -100,7 +100,7 @@
                             <div class="control-group">
                                 <label>玩家類型</label>
                                 <select class="player-type-select" id="p3-type">
-                                    <option value="human">玩家 3 (按鍵: Z)</option>
+                                    <option value="human">玩家 3 (Z:集氣/道具, C:防禦, X:巨化)</option>
                                     <option value="ai">AI 機器人</option>
                                     <option value="none" selected>停用</option>
                                 </select>
@@ -132,7 +132,7 @@
                             <div class="control-group">
                                 <label>玩家類型</label>
                                 <select class="player-type-select" id="p4-type">
-                                    <option value="human">玩家 4 (按鍵: M)</option>
+                                    <option value="human">玩家 4 (M:集氣/道具, B:防禦, N:巨化)</option>
                                     <option value="ai">AI 機器人</option>
                                     <option value="none" selected>停用</option>
                                 </select>
@@ -272,6 +272,10 @@
                                     <span class="btn-badge">🌌 巨化</span>
                                     <span class="btn-key-hint">E</span>
                                 </button>
+                                <button class="btn-defend-action hidden" id="btn-defend-p1" aria-label="發動防禦">
+                                    <span class="btn-badge">🛡️ 防禦</span>
+                                    <span class="btn-key-hint">W</span>
+                                </button>
                             </div>
                             <div class="charge-status" id="p1-charge-status">等待集氣...</div>
                         </div>
@@ -316,6 +320,10 @@
                                 <button class="btn-giant-action hidden" id="btn-giant-p2" aria-label="發動巨化">
                                     <span class="btn-badge">🌌 巨化</span>
                                     <span class="btn-key-hint">O</span>
+                                </button>
+                                <button class="btn-defend-action hidden" id="btn-defend-p2" aria-label="發動防禦">
+                                    <span class="btn-badge">🛡️ 防禦</span>
+                                    <span class="btn-key-hint">I</span>
                                 </button>
                             </div>
                             <div class="charge-status" id="p2-charge-status">等待集氣...</div>
@@ -402,6 +410,10 @@
                                     <span class="btn-badge">🌌 巨化</span>
                                     <span class="btn-key-hint">X</span>
                                 </button>
+                                <button class="btn-defend-action hidden" id="btn-defend-p3" aria-label="發動防禦">
+                                    <span class="btn-badge">🛡️ 防禦</span>
+                                    <span class="btn-key-hint">C</span>
+                                </button>
                             </div>
                             <div class="charge-status" id="p3-charge-status">等待集氣...</div>
                         </div>
@@ -446,6 +458,10 @@
                                 <button class="btn-giant-action hidden" id="btn-giant-p4" aria-label="發動巨化">
                                     <span class="btn-badge">🌌 巨化</span>
                                     <span class="btn-key-hint">N</span>
+                                </button>
+                                <button class="btn-defend-action hidden" id="btn-defend-p4" aria-label="發動防禦">
+                                    <span class="btn-badge">🛡️ 防禦</span>
+                                    <span class="btn-key-hint">B</span>
                                 </button>
                             </div>
                             <div class="charge-status" id="p4-charge-status">等待集氣...</div>
