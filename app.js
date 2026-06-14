@@ -565,7 +565,7 @@ const game = {
     shakeIntensity: 0,
     items: [], // Items spawned on stadium floor
     itemSpawnTimer: 3.0, // Spawns items periodically
-    itemDistributeTimer: 10.0, // Every 10s randomly sends item to player
+    itemDistributeTimer: 20.0, // Every 20s randomly sends item to player
     missiles: [] // Active missiles in the air/targeting
 };
 
@@ -1672,7 +1672,7 @@ function transitionToBattle() {
     game.particles = [];
     game.items = []; // Reset items on stadium floor
     game.itemSpawnTimer = 3.0; // Spawns first item 3 seconds in
-    game.itemDistributeTimer = 10.0; // Spawns first random distribution at 10s
+    game.itemDistributeTimer = 20.0; // Spawns first random distribution at 20s
     game.missiles = []; // Clear active missiles
     
     // Reset item lottery state
@@ -1684,7 +1684,7 @@ function transitionToBattle() {
             const progressFill = document.getElementById('item-timer-progress-fill');
             if (progressFill) progressFill.style.width = '100%';
             const timerVal = document.getElementById('item-lottery-timer-val');
-            if (timerVal) timerVal.innerText = '10.0s';
+            if (timerVal) timerVal.innerText = '20.0s';
         } else {
             itemLotteryContainer.classList.add('item-timer-hidden');
         }
@@ -2016,7 +2016,7 @@ function updatePhysics(dt) {
             const displayTime = Math.max(0, game.itemDistributeTimer);
             if (itemLotteryTimerValEl) itemLotteryTimerValEl.innerText = `${displayTime.toFixed(1)}s`;
             if (itemTimerProgressFillEl) {
-                const pct = (displayTime / 10.0) * 100;
+                const pct = (displayTime / 20.0) * 100;
                 itemTimerProgressFillEl.style.width = `${pct}%`;
             }
         }
@@ -2068,7 +2068,7 @@ function updatePhysics(dt) {
                     }
                 } else {
                     // No active spinner, reset timer
-                    game.itemDistributeTimer = 10.0;
+                    game.itemDistributeTimer = 20.0;
                 }
             }
         } else {
@@ -2177,7 +2177,7 @@ function updatePhysics(dt) {
                 if (overlay) overlay.classList.add('hidden');
                 
                 game.isDrawingItem = false;
-                game.itemDistributeTimer = 10.0;
+                game.itemDistributeTimer = 20.0;
             }
         }
 
