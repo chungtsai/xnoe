@@ -950,7 +950,6 @@ const btnStartGame = document.getElementById('btn-start-game');
 const btnAbort = document.getElementById('btn-abort');
 const btnRematch = document.getElementById('btn-rematch');
 const btnMainMenu = document.getElementById('btn-main-menu');
-const audioToggle = document.getElementById('audio-toggle');
 const announcerText = document.getElementById('announcer-text');
 const announcerSubtext = document.getElementById('announcer-subtext');
 const announcerOverlay = document.getElementById('announcer');
@@ -1079,12 +1078,7 @@ function setupUIListeners() {
         }
     });
 
-    // Audio button
-    audioToggle.addEventListener('click', () => {
-        sounds.init();
-        const isMuted = sounds.toggleMute();
-        audioToggle.classList.toggle('muted', isMuted);
-    });
+
 
     // Screen Actions
     btnStartGame.addEventListener('click', () => {

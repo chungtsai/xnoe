@@ -1217,45 +1217,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     gap: 20px;
 }
 
-/* Audio Toggle Button */
-.audio-toggle-btn {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: var(--bg-card);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 1.2rem;
-    transition: all 0.3s;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    z-index: 100;
-}
 
-.audio-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: scale(1.1);
-    border-color: var(--p1-color);
-}
-
-.audio-toggle-btn.muted {
-    opacity: 0.5;
-}
-
-.audio-toggle-btn.muted .audio-icon::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 2px;
-    background: #ff0055;
-    transform: rotate(45deg);
-}
 
 /* Responsive adjustments */
 @media (max-width: 1100px) {
@@ -1596,7 +1558,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     .lottery-overlay {
         width: 90vw;
         max-width: 320px;
-        top: 55px; /* Positioned right below top scoreboard header */
+        bottom: 20px;
         padding: 8px 12px;
         z-index: 105;
     }
@@ -1652,16 +1614,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
         font-size: 0.75rem;
     }
 
-    /* Fixed audio toggle position bottom-center to avoid overlaps */
-    .audio-toggle-btn {
-        bottom: 15px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        width: 42px;
-        height: 42px;
-        font-size: 1.1rem;
-    }
+
 
     /* Victory stacked actions */
     .victory-actions {
@@ -2071,7 +2024,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
 /* ==================== HOLOGRAPHIC LOTTERY OVERLAY ==================== */
 .lottery-overlay {
     position: absolute;
-    top: 15px;
+    bottom: 20px;
     left: 50%;
     transform: translate(-50%, 0);
     width: 600px;
@@ -2092,8 +2045,10 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     display: none !important;
 }
 
+
+
 @keyframes lotteryEnter {
-    0% { transform: translate(-50%, -20px) scale(0.95); opacity: 0; }
+    0% { transform: translate(-50%, 20px) scale(0.95); opacity: 0; }
     100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
 }
 

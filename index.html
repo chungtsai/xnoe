@@ -352,18 +352,6 @@
                             <span class="timer-label">BATTLE TIME</span>
                             <span id="battle-timer-val">99.0</span>
                         </div>
-
-                        <!-- Item Lottery Timer Display -->
-                        <div id="item-lottery-container" class="item-timer-hidden">
-                            <div class="item-timer-header">
-                                <span class="item-timer-icon">🎁</span>
-                                <span class="item-timer-label">下一波道具抽籤</span>
-                            </div>
-                            <div class="item-timer-bar-wrapper">
-                                <div id="item-timer-progress-fill" class="item-timer-progress-fill" style="width: 100%;"></div>
-                            </div>
-                            <span id="item-lottery-timer-val">10.0s</span>
-                        </div>
                     </div>
 
                     <div class="arena-wrapper">
@@ -375,6 +363,18 @@
                             <div id="announcer-text" class="announcer-text">準備戰鬥</div>
                             <div id="announcer-subtext" class="announcer-subtext"></div>
                         </div>
+                    </div>
+
+                    <!-- Item Lottery Timer Display -->
+                    <div id="item-lottery-container" class="item-timer-hidden">
+                        <div class="item-timer-header">
+                            <span class="item-timer-icon">🎁</span>
+                            <span class="item-timer-label">下一波道具抽籤</span>
+                        </div>
+                        <div class="item-timer-bar-wrapper">
+                            <div id="item-timer-progress-fill" class="item-timer-progress-fill" style="width: 100%;"></div>
+                        </div>
+                        <span id="item-lottery-timer-val">10.0s</span>
                     </div>
                     
                     <!-- Middle Controls / Game State HUD -->
@@ -542,11 +542,6 @@
                 </div>
             </div>
         </section>
-
-        <!-- Dynamic Game Sound Controller Toggle -->
-        <button id="audio-toggle" class="audio-toggle-btn" aria-label="切換音效">
-            <span class="audio-icon">🔊</span>
-        </button>
     </div>
 
     <!-- Main Game Script -->
