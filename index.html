@@ -544,6 +544,66 @@
         </section>
     </div>
 
+    <!-- ================= FLOATING AUDIO WIDGET ================= -->
+    <div id="audio-widget" class="audio-widget minimized">
+        <!-- Minimized Trigger Button (looks like a spinning neon disc/Beyblade) -->
+        <button id="audio-widget-trigger" class="widget-trigger-btn" aria-label="開啟音訊控制">
+            <span class="music-icon">🎵</span>
+        </button>
+        
+        <!-- Expanded Panel Content -->
+        <div class="widget-expanded-content">
+            <div class="audio-panel-header">
+                <span class="panel-icon">⚙️</span>
+                <h3>音頻調音台 (Audio Mixer)</h3>
+                <button id="audio-widget-close" class="panel-close-btn" aria-label="收合">&times;</button>
+            </div>
+            
+            <div class="audio-panel-body">
+                <!-- Music Section -->
+                <div class="audio-control-row">
+                    <span class="row-label">🎵 背景音樂 (BGM)</span>
+                    <button id="bgm-toggle-btn" class="audio-toggle-btn active">ON</button>
+                </div>
+                <div class="audio-select-row">
+                    <select id="bgm-track-select" class="select-styled audio-select">
+                        <option value="stardust">星塵冠軍 (Chiptune)</option>
+                        <option value="neon" selected>霓虹衝擊 (Synthwave)</option>
+                        <option value="metal">金屬撕裂 (Cyber Rock)</option>
+                    </select>
+                </div>
+                <div class="audio-volume-row">
+                    <span class="vol-icon">🔈</span>
+                    <input type="range" id="bgm-volume-slider" class="volume-slider" min="0" max="1" step="0.05" value="0.4">
+                    <span id="bgm-volume-txt" class="volume-txt">40%</span>
+                </div>
+
+                <!-- SFX Section -->
+                <div class="audio-control-row" style="margin-top: 15px;">
+                    <span class="row-label">🔊 遊戲音效 (SFX)</span>
+                    <button id="sfx-toggle-btn" class="audio-toggle-btn active">ON</button>
+                </div>
+                <div class="audio-volume-row">
+                    <span class="vol-icon">🔈</span>
+                    <input type="range" id="sfx-volume-slider" class="volume-slider" min="0" max="1" step="0.05" value="0.6">
+                    <span id="sfx-volume-txt" class="volume-txt">60%</span>
+                </div>
+
+                <!-- Audio Visualizer / Pulse -->
+                <div class="audio-visualizer-container">
+                    <div class="visualizer-bar" id="v-bar-1"></div>
+                    <div class="visualizer-bar" id="v-bar-2"></div>
+                    <div class="visualizer-bar" id="v-bar-3"></div>
+                    <div class="visualizer-bar" id="v-bar-4"></div>
+                    <div class="visualizer-bar" id="v-bar-5"></div>
+                    <div class="visualizer-bar" id="v-bar-6"></div>
+                    <div class="visualizer-bar" id="v-bar-7"></div>
+                    <div class="visualizer-bar" id="v-bar-8"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Game Script -->
     <script src="app.js"></script>
 </body>
