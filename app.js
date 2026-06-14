@@ -278,6 +278,14 @@ class SoundManager {
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
             osc.start(now);
             osc.stop(now + 0.3);
+        } else if (type === 'spike') {
+            osc.frequency.setValueAtTime(587.33, now); // D5
+            osc.frequency.setValueAtTime(739.99, now + 0.08); // F#5
+            osc.frequency.setValueAtTime(880.00, now + 0.16); // A5
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
         } else {
             osc.frequency.setValueAtTime(440, now); // A4
             osc.frequency.setValueAtTime(554.37, now + 0.08); // C#5
@@ -306,6 +314,14 @@ class SoundManager {
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
             osc.start(now);
             osc.stop(now + 0.35);
+        } else if (type === 'spike') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
         } else {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(220, now);
@@ -370,6 +386,7 @@ const game = {
     currentRound: 1,
     maxBattleTimer: 99.0, // Default to 99.0
     battleTimer: 99.0,
+    gameMode: 'normal',   // normal, item
     players: [
         { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null },
         { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null },
@@ -419,6 +436,7 @@ class BeybladePhysics {
         this.history = [];
         this.damageFlash = 0; // collision flash effect duration
         this.invincibleTimer = 0; // Invincibility duration in seconds
+        this.atkBoostTimer = 0; // Attack boost duration in seconds
     }
 
     update(dt, stadiumType, hazardZones) {
@@ -428,6 +446,12 @@ class BeybladePhysics {
         if (this.invincibleTimer > 0) {
             this.invincibleTimer -= dt * (16.666 / 1000);
             if (this.invincibleTimer < 0) this.invincibleTimer = 0;
+        }
+        
+        // Update attack boost timer
+        if (this.atkBoostTimer > 0) {
+            this.atkBoostTimer -= dt * (16.666 / 1000);
+            if (this.atkBoostTimer < 0) this.atkBoostTimer = 0;
         }
         
         // 1. Air Friction & Deceleration
@@ -698,10 +722,22 @@ function setupUIListeners() {
     // Battle Duration Selection
     const durationSelect = document.getElementById('duration-select');
     if (durationSelect) {
-        game.maxBattleTimer = parseFloat(durationSelect.value);
+        const val = durationSelect.value;
+        game.maxBattleTimer = val === 'infinite' ? Infinity : parseFloat(val);
         durationSelect.addEventListener('change', (e) => {
-            game.maxBattleTimer = parseFloat(e.target.value);
+            const newVal = e.target.value;
+            game.maxBattleTimer = newVal === 'infinite' ? Infinity : parseFloat(newVal);
             game.battleTimer = game.maxBattleTimer;
+        });
+    }
+
+    // Game Mode Selection
+    const modeSelect = document.getElementById('mode-select');
+    if (modeSelect) {
+        game.gameMode = modeSelect.value;
+        modeSelect.addEventListener('change', (e) => {
+            game.gameMode = e.target.value;
+            updateRulesText();
         });
     }
 
@@ -839,6 +875,27 @@ function updateConfigView() {
 
 // --- STATE MACHINE TRANSITIONS ---
 
+function updateRulesText() {
+    const rulesList = document.getElementById('game-rules-list');
+    if (!rulesList) return;
+    
+    let html = `
+        <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
+        <li><strong>集氣能量條</strong>會快速上下移動，在最頂端（紅色臨界區）按下鎖定，可使出<strong>「極限爆發」最強陀螺</strong>！</li>
+        <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
+        <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
+    `;
+    
+    if (game.gameMode === 'item') {
+        html += `
+            <li class="item-rule-highlight"><strong>【道具賽規則】</strong>戰鬥中場地會隨機產生道具（💊 治癒、🛡️ 無敵、📌 刺針）。陀螺碰撞即可拾取。</li>
+            <li class="item-rule-highlight">當拾取道具後，按鍵（如 P1 的 Q 鍵）即可<strong>手動發動道具</strong>來逆轉戰局！</li>
+        `;
+    }
+    
+    rulesList.innerHTML = html;
+}
+
 function transitionToSetup() {
     game.state = STATE_SETUP;
     sounds.stopAllHums();
@@ -854,6 +911,7 @@ function transitionToSetup() {
     if (roundModal) roundModal.classList.add('hidden');
     
     document.title = '戰鬥陀螺：極限霓虹衝擊 | Beyblade Neon Champions';
+    updateRulesText();
 }
 
 function updateScoreboardHeader() {
@@ -1029,6 +1087,7 @@ function lockPlayerPower(playerId) {
 }
 
 function usePlayerItem(playerId) {
+    if (game.gameMode !== 'item') return;
     const p = game.players.find(x => x.id === playerId);
     if (!p || p.type === 'none') return;
     
@@ -1054,6 +1113,12 @@ function usePlayerItem(playerId) {
         // Gold sparks visual effect
         createSparks(b.x, b.y, '#ffaa00', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ffaa00'));
+    } else if (itemType === 'spike') {
+        // 3 seconds of attack boost (10% increased attack power)
+        b.atkBoostTimer = 3.0;
+        // Hot red sparks visual effect
+        createSparks(b.x, b.y, '#ff3300', 15, 1.2);
+        game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ff3300'));
     }
 }
 
@@ -1139,7 +1204,7 @@ function transitionToBattle() {
     game.battleTimer = game.maxBattleTimer;
     const timerValEl = document.getElementById('battle-timer-val');
     if (timerValEl) {
-        timerValEl.innerText = game.maxBattleTimer.toFixed(1);
+        timerValEl.innerText = game.maxBattleTimer === Infinity ? '∞' : game.maxBattleTimer.toFixed(1);
         timerValEl.classList.remove('warning');
     }
 
@@ -1271,25 +1336,34 @@ function battleLoop(now) {
     }
 
     // Countdown Timer Logic
-    game.battleTimer -= deltaSeconds;
-    if (game.battleTimer <= 0) {
-        game.battleTimer = 0;
+    if (game.maxBattleTimer !== Infinity) {
+        game.battleTimer -= deltaSeconds;
+        if (game.battleTimer <= 0) {
+            game.battleTimer = 0;
+            const timerValEl = document.getElementById('battle-timer-val');
+            if (timerValEl) {
+                timerValEl.innerText = '0.0';
+                timerValEl.classList.add('warning');
+            }
+            handleBattleTimeout();
+            return; // Halt loop execution
+        }
+
+        // Update digital clock UI
         const timerValEl = document.getElementById('battle-timer-val');
         if (timerValEl) {
-            timerValEl.innerText = '0.0';
-            timerValEl.classList.add('warning');
+            timerValEl.innerText = game.battleTimer.toFixed(1);
+            if (game.battleTimer < 10.0) {
+                timerValEl.classList.add('warning');
+            } else {
+                timerValEl.classList.remove('warning');
+            }
         }
-        handleBattleTimeout();
-        return; // Halt loop execution
-    }
-
-    // Update digital clock UI
-    const timerValEl = document.getElementById('battle-timer-val');
-    if (timerValEl) {
-        timerValEl.innerText = game.battleTimer.toFixed(1);
-        if (game.battleTimer < 10.0) {
-            timerValEl.classList.add('warning');
-        } else {
+    } else {
+        // Infinite Timer Display
+        const timerValEl = document.getElementById('battle-timer-val');
+        if (timerValEl) {
+            timerValEl.innerText = '∞';
             timerValEl.classList.remove('warning');
         }
     }
@@ -1320,30 +1394,33 @@ function updatePhysics(dt) {
     }
 
     // Item Spawning Logic
-    game.itemSpawnTimer -= dt * (16.666 / 1000);
-    if (game.itemSpawnTimer <= 0) {
-        if (game.items.length < 2) {
-            const spawnDist = Math.random() * (STADIUM_RADIUS - 60);
-            const spawnAngle = Math.random() * Math.PI * 2;
-            const x = CENTER_X + Math.cos(spawnAngle) * spawnDist;
-            const y = CENTER_Y + Math.sin(spawnAngle) * spawnDist;
-            const type = Math.random() < 0.5 ? 'heal' : 'invincible';
-            game.items.push({
-                x,
-                y,
-                type,
-                radius: 12,
-                pulseAngle: 0
-            });
+    if (game.gameMode === 'item') {
+        game.itemSpawnTimer -= dt * (16.666 / 1000);
+        if (game.itemSpawnTimer <= 0) {
+            if (game.items.length < 2) {
+                const spawnDist = Math.random() * (STADIUM_RADIUS - 60);
+                const spawnAngle = Math.random() * Math.PI * 2;
+                const x = CENTER_X + Math.cos(spawnAngle) * spawnDist;
+                const y = CENTER_Y + Math.sin(spawnAngle) * spawnDist;
+                const rand = Math.random();
+                const type = rand < 0.33 ? 'heal' : (rand < 0.66 ? 'invincible' : 'spike');
+                game.items.push({
+                    x,
+                    y,
+                    type,
+                    radius: 12,
+                    pulseAngle: 0
+                });
+            }
+            game.itemSpawnTimer = 5.0; // Reset spawn timer to 5s
         }
-        game.itemSpawnTimer = 5.0; // Reset spawn timer to 5s
     }
 
     // Update individual beyblade physics and handle item collection & AI logic
     game.activeBeyblades.forEach(b => {
         b.update(dt, game.stadiumType, game.hazardZones);
         
-        if (b.state === 'spinning') {
+        if (b.state === 'spinning' && game.gameMode === 'item') {
             // 1. Item Collection check
             for (let i = game.items.length - 1; i >= 0; i--) {
                 const item = game.items[i];
@@ -1352,7 +1429,10 @@ function updatePhysics(dt) {
                     // Collect item (replaces existing one)
                     b.player.item = item.type;
                     sounds.playCollectItem(item.type);
-                    createSparks(item.x, item.y, item.type === 'heal' ? '#00ff66' : '#ffaa00', 8, 1.0);
+                    let sparkColor = '#ffaa00';
+                    if (item.type === 'heal') sparkColor = '#00ff66';
+                    else if (item.type === 'spike') sparkColor = '#ff3300';
+                    createSparks(item.x, item.y, sparkColor, 8, 1.0);
                     game.items.splice(i, 1);
                 }
             }
@@ -1370,6 +1450,16 @@ function updatePhysics(dt) {
                         if (other === b || other.state !== 'spinning') return false;
                         const dist = Math.hypot(other.x - b.x, other.y - b.y);
                         return dist < 120;
+                    });
+                    if (closeOpponent) {
+                        shouldUse = true;
+                    }
+                } else if (b.player.item === 'spike') {
+                    // Use spike when an opponent is close by
+                    const closeOpponent = game.activeBeyblades.some(other => {
+                        if (other === b || other.state !== 'spinning') return false;
+                        const dist = Math.hypot(other.x - b.x, other.y - b.y);
+                        return dist < 100;
                     });
                     if (closeOpponent) {
                         shouldUse = true;
@@ -1452,7 +1542,15 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         impulseScalar /= (1 / b1.mass) + (1 / b2.mass);
         
         // Multiplier based on Style Knockback force
-        const forceMultiplier = (b1.force + b2.force) * 0.5;
+        let b1ForceVal = b1.force;
+        if (b1.atkBoostTimer > 0) {
+            b1ForceVal *= 1.1;
+        }
+        let b2ForceVal = b2.force;
+        if (b2.atkBoostTimer > 0) {
+            b2ForceVal *= 1.1;
+        }
+        const forceMultiplier = (b1ForceVal + b2ForceVal) * 0.5;
         impulseScalar *= forceMultiplier;
 
         // Apply impulse forces
@@ -1474,9 +1572,18 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         // Deduct spins from impact friction
         const spinImpactLoss = Math.min(Math.abs(relativeTangentVel) * 0.035, 12);
         
-        // Attack-type inflicts more spin drain on opponent
-        const p1Drain = spinImpactLoss * b2.style.force * 0.5;
-        const p2Drain = spinImpactLoss * b1.style.force * 0.5;
+        // Attack-type inflicts more spin drain on opponent (boosted if attacker has active attack boost)
+        let b2AtkForce = b2.style.force;
+        if (b2.atkBoostTimer > 0) {
+            b2AtkForce *= 1.1;
+        }
+        let b1AtkForce = b1.style.force;
+        if (b1.atkBoostTimer > 0) {
+            b1AtkForce *= 1.1;
+        }
+        
+        const p1Drain = spinImpactLoss * b2AtkForce * 0.5;
+        const p2Drain = spinImpactLoss * b1AtkForce * 0.5;
         
         if (!(b1.invincibleTimer > 0)) {
             b1.spin -= p1Drain;
@@ -1551,6 +1658,9 @@ function updateHUDValues() {
             } else if (b.player.item === 'invincible') {
                 btn.className = `btn-charge-circle has-item-invincible`;
                 btn.innerHTML = `<span class="btn-badge">🛡️ 無敵</span><span class="btn-key-hint">${b.player.keyLabel} (按)</span>`;
+            } else if (b.player.item === 'spike') {
+                btn.className = `btn-charge-circle has-item-spike`;
+                btn.innerHTML = `<span class="btn-badge">📌 刺針</span><span class="btn-key-hint">${b.player.keyLabel} (按)</span>`;
             } else {
                 btn.className = 'btn-charge-circle';
                 btn.innerHTML = `<span class="btn-badge" id="p${b.player.id}-btn-rpm">${Math.round(spinPct)}%</span><span class="btn-key-hint">${b.player.keyLabel}</span>`;
@@ -1866,9 +1976,9 @@ function renderStadiumBattleScene() {
             const drawRadius = item.radius + pulse;
             
             ctx.shadowBlur = 15;
-            ctx.shadowColor = item.type === 'heal' ? '#00ff66' : '#ffaa00';
-            ctx.fillStyle = item.type === 'heal' ? 'rgba(0, 255, 102, 0.2)' : 'rgba(255, 170, 0, 0.2)';
-            ctx.strokeStyle = item.type === 'heal' ? '#00ff66' : '#ffaa00';
+            ctx.shadowColor = item.type === 'heal' ? '#00ff66' : (item.type === 'invincible' ? '#ffaa00' : '#ff3300');
+            ctx.fillStyle = item.type === 'heal' ? 'rgba(0, 255, 102, 0.2)' : (item.type === 'invincible' ? 'rgba(255, 170, 0, 0.2)' : 'rgba(255, 51, 0, 0.2)');
+            ctx.strokeStyle = item.type === 'heal' ? '#00ff66' : (item.type === 'invincible' ? '#ffaa00' : '#ff3300');
             ctx.lineWidth = 2;
             
             // Outer pulsing ring
@@ -1878,14 +1988,15 @@ function renderStadiumBattleScene() {
             ctx.stroke();
             
             // Inner icon
-            ctx.fillStyle = item.type === 'heal' ? '#00ff66' : '#ffaa00';
             if (item.type === 'heal') {
+                ctx.fillStyle = '#00ff66';
                 // Draw a plus "+" sign
                 const w = 4;
                 const h = 12;
                 ctx.fillRect(item.x - w/2, item.y - h/2, w, h);
                 ctx.fillRect(item.x - h/2, item.y - w/2, h, w);
-            } else {
+            } else if (item.type === 'invincible') {
+                ctx.fillStyle = '#ffaa00';
                 // Draw a diamond/shield shape
                 ctx.beginPath();
                 ctx.moveTo(item.x, item.y - 7);
@@ -1894,6 +2005,20 @@ function renderStadiumBattleScene() {
                 ctx.lineTo(item.x, item.y + 8);
                 ctx.lineTo(item.x - 5, item.y + 4);
                 ctx.lineTo(item.x - 6, item.y - 3);
+                ctx.closePath();
+                ctx.fill();
+            } else if (item.type === 'spike') {
+                ctx.fillStyle = '#ff3300';
+                // Draw a sharp 4-pointed star spike shape
+                ctx.beginPath();
+                ctx.moveTo(item.x, item.y - 8);
+                ctx.lineTo(item.x + 2, item.y - 2);
+                ctx.lineTo(item.x + 8, item.y);
+                ctx.lineTo(item.x + 2, item.y + 2);
+                ctx.lineTo(item.x, item.y + 8);
+                ctx.lineTo(item.x - 2, item.y + 2);
+                ctx.lineTo(item.x - 8, item.y);
+                ctx.lineTo(item.x - 2, item.y - 2);
                 ctx.closePath();
                 ctx.fill();
             }
@@ -2098,6 +2223,41 @@ function drawBeyblade(b) {
         ctx.restore();
     }
 
+    // Crimson glowing aura/spikes effect if attack boosted
+    if (b.atkBoostTimer > 0) {
+        ctx.save();
+        ctx.rotate(-b.angle); // Un-rotate to keep details static
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff3300';
+        ctx.strokeStyle = `rgba(255, 51, 0, ${0.4 + Math.sin(performance.now() / 80) * 0.25})`;
+        ctx.lineWidth = 2.5;
+        
+        // Draw sharp outer spike ring (8-pointed star shape)
+        ctx.beginPath();
+        const spikeCount = 8;
+        const innerR = b.radius + 3;
+        const outerR = b.radius + 8;
+        const stepAngle = (Math.PI * 2) / spikeCount;
+        const rotOffset = performance.now() / 300;
+        
+        for (let i = 0; i < spikeCount; i++) {
+            const angle = i * stepAngle + rotOffset;
+            const nextAngle = (i + 0.5) * stepAngle + rotOffset;
+            const finalAngle = (i + 1) * stepAngle + rotOffset;
+            
+            if (i === 0) {
+                ctx.moveTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR);
+            } else {
+                ctx.lineTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR);
+            }
+            ctx.lineTo(Math.cos(nextAngle) * outerR, Math.sin(nextAngle) * outerR);
+            ctx.lineTo(Math.cos(finalAngle) * innerR, Math.sin(finalAngle) * innerR);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+    }
+
     ctx.restore();
 }
 
@@ -2106,9 +2266,11 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setupUIListeners();
         updateConfigView();
+        updateRulesText();
     });
 } else {
     // If DOM is already parsed (typical for type="module" scripts at end of body)
     setupUIListeners();
     updateConfigView();
+    updateRulesText();
 }

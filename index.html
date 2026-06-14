@@ -174,12 +174,20 @@
                             <option value="60">60 秒 (持久)</option>
                             <option value="90">90 秒</option>
                             <option value="99" selected>99 秒 (極限)</option>
+                            <option value="infinite">無限時間 (直到分出勝負)</option>
+                        </select>
+                    </div>
+                    <div class="arena-select-container">
+                        <label for="mode-select">選擇比賽類型</label>
+                        <select id="mode-select" class="select-styled">
+                            <option value="normal" selected>一般比賽 (Normal Match)</option>
+                            <option value="item">道具賽 (Item Match)</option>
                         </select>
                     </div>
                     <button id="btn-start-game" class="btn btn-primary btn-glow-anim">進入戰鬥準備</button>
                     <div class="game-rules-info">
                         <h3>遊戲規則：</h3>
-                        <ul>
+                        <ul id="game-rules-list">
                             <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
                             <li><strong>集氣能量條</strong>會快速上下移動，在最頂端（紅色臨界區）按下鎖定，可使出<strong>「極限爆發」最強陀螺</strong>！</li>
                             <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>

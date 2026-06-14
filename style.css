@@ -1588,6 +1588,13 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     animation: btnPulseInvincible 1.2s infinite alternate ease-in-out !important;
 }
 
+.btn-charge-circle.has-item-spike {
+    border-color: #ff3300 !important;
+    box-shadow: inset 0 2px 4px rgba(255, 51, 0, 0.2), 0 0 15px rgba(255, 51, 0, 0.6) !important;
+    background: rgba(60, 10, 0, 0.85) !important;
+    animation: btnPulseSpike 1.2s infinite alternate ease-in-out !important;
+}
+
 @keyframes btnPulseHeal {
     0% { box-shadow: inset 0 2px 4px rgba(0, 255, 102, 0.2), 0 0 10px rgba(0, 255, 102, 0.4); }
     100% { box-shadow: inset 0 2px 4px rgba(0, 255, 102, 0.3), 0 0 20px rgba(0, 255, 102, 0.8); }
@@ -1596,4 +1603,22 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
 @keyframes btnPulseInvincible {
     0% { box-shadow: inset 0 2px 4px rgba(255, 170, 0, 0.2), 0 0 10px rgba(255, 170, 0, 0.4); }
     100% { box-shadow: inset 0 2px 4px rgba(255, 170, 0, 0.3), 0 0 20px rgba(255, 170, 0, 0.8); }
+}
+
+@keyframes btnPulseSpike {
+    0% { box-shadow: inset 0 2px 4px rgba(255, 51, 0, 0.2), 0 0 10px rgba(255, 51, 0, 0.4); }
+    100% { box-shadow: inset 0 2px 4px rgba(255, 51, 0, 0.3), 0 0 20px rgba(255, 51, 0, 0.8); }
+}
+
+.item-rule-highlight {
+    color: #ff9900 !important;
+    border-left: 2px solid #ff9900;
+    padding-left: 8px;
+    margin-left: -10px;
+    animation: rulePulse 2s infinite alternate ease-in-out;
+}
+
+@keyframes rulePulse {
+    0% { opacity: 0.85; }
+    100% { opacity: 1; text-shadow: 0 0 5px rgba(255, 153, 0, 0.4); }
 }
