@@ -1289,9 +1289,61 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
         display: none; /* remove background blur for better mobile performance */
     }
 
-    .logo-text { font-size: 2.6rem; }
-    .sub-logo-text { font-size: 1.2rem; letter-spacing: 4px; }
-    .tagline { letter-spacing: 6px; }
+    .app-container {
+        padding: 10px;
+    }
+
+    .logo-text { font-size: 2.4rem; }
+    .sub-logo-text { font-size: 1.1rem; letter-spacing: 3px; margin-bottom: 5px; }
+    .tagline { letter-spacing: 4px; font-size: 0.8rem; }
+    .game-header { margin-bottom: 25px; }
+
+    /* Collapsed/compact inactive setup cards to avoid scrolling */
+    .player-config-card.inactive .beyblade-select-group,
+    .player-config-card.inactive .stats-preview {
+        display: none !important;
+    }
+    
+    .player-config-card {
+        margin-bottom: 0;
+    }
+    
+    .setup-container {
+        gap: 15px;
+    }
+
+    .action-panel {
+        padding: 15px;
+        gap: 15px;
+    }
+
+    .game-rules-info {
+        font-size: 0.75rem;
+        padding: 10px 15px;
+        line-height: 1.4;
+    }
+
+    /* Scoreboard Header: side-by-side to avoid overlap */
+    #battle-scoreboard-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 15px 8px 15px;
+    }
+    
+    .scoreboard-content {
+        align-items: flex-start;
+    }
+    
+    .header-menu-container {
+        position: static;
+        transform: none;
+    }
+
+    /* Hide keyboard shortcuts on mobile touchscreens */
+    .btn-key-hint {
+        display: none !important;
+    }
 
     .battle-grid-layout {
         position: relative;
@@ -1303,27 +1355,43 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
         padding: 0;
     }
 
+    /* Arena sizing and scaling */
     .arena-container {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
         width: 90vw;
-        max-width: 360px;
+        max-width: 350px;
         z-index: 5;
         margin: 0;
     }
 
     .arena-wrapper {
-        max-width: 360px;
+        max-width: 350px;
         box-shadow: 0 0 30px rgba(0,0,0,0.8);
     }
+    
+    /* Avoid overlap on shorter screens */
+    @media (max-height: 700px) {
+        .arena-container {
+            max-width: 290px;
+        }
+        .arena-wrapper {
+            max-width: 290px;
+        }
+    }
 
-    /* Absolute position at 4 screen corners */
+    /* Hide disabled players completely to save space */
+    .player-panel.player-type-none {
+        display: none !important;
+    }
+
+    /* Common mobile player panel styling */
     .player-panel {
         position: absolute;
-        width: 100px;
-        height: 140px;
+        width: 110px;
+        height: auto;
         background: transparent;
         border: none;
         box-shadow: none;
@@ -1331,7 +1399,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 6px;
         z-index: 10;
         padding: 0;
         pointer-events: auto;
@@ -1345,85 +1413,271 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     .panel-body {
         padding: 0;
         flex-grow: 0;
+        width: 100%;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
     }
 
-    /* Mobile panel headers (Only display score dots) */
+    /* Panel header displaying player badge and round scores side-by-side */
     .panel-header {
         background: transparent !important;
         border: none !important;
         padding: 0 !important;
         height: auto;
         width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
     }
 
-    .panel-header .player-badge,
     .panel-header .player-name {
-        display: none !important; /* Hide details on mobile */
+        display: none !important; /* Hide name to save space */
+    }
+
+    .panel-header .player-badge {
+        display: block !important;
+        font-size: 0.65rem;
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-weight: 800;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
 
     .panel-header .round-scores {
         margin-left: 0;
         display: flex;
-        gap: 6px;
+        gap: 4px;
+    }
+    
+    .panel-header .score-dot {
+        width: 6px;
+        height: 6px;
     }
 
-    /* Flip order to place score dots below top circles, above bottom circles */
+    /* Symmetrical stacking: headers on outside, buttons on inside */
     .player-panel.top-left .panel-header,
     .player-panel.top-right .panel-header {
-        order: 2;
+        order: -1;
+        margin-bottom: 2px;
     }
     
     .player-panel.bottom-left .panel-header,
     .player-panel.bottom-right .panel-header {
-        order: -1;
+        order: 2;
+        margin-top: 2px;
     }
 
-    /* Hide linear bars and textual stats on mobile */
-    .player-panel .battle-hud,
-    .player-panel .charge-status {
-        display: none !important;
+    /* --- HUMAN PLAYER PANEL LAYOUT --- */
+    .player-panel.player-type-human .battle-hud {
+        display: none !important; /* Hide linear hud for human player */
     }
 
-    /* Increase target touch area for mobile */
-    .btn-charge-circle {
+    .player-panel.player-type-human .controls-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .player-panel.player-type-human .circular-gauge-wrapper {
+        width: 100px;
+        height: 100px;
+        transform: scale(0.85); /* Scales circle nicely */
+        margin: -5px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .player-panel.player-type-human .btn-charge-circle {
         width: 80px;
         height: 80px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-    }
-    
-    .circular-gauge-wrapper {
-        width: 104px;
-        height: 104px;
-    }
-    
-    .progress-ring {
-        width: 104px;
-        height: 104px;
-    }
-    
-    .progress-ring-bg, .progress-ring-fill {
-        cx: 52;
-        cy: 52;
-        r: 42;
-        stroke-width: 9;
+        pointer-events: auto;
     }
 
-    /* Custom Victory actions stacked on mobile */
+    /* Smaller touch-friendly skills wrapping side-by-side below circular gauge */
+    .player-panel.player-type-human .btn-giant-action,
+    .player-panel.player-type-human .btn-defend-action {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        box-shadow: inset 0 1px 3px rgba(255,255,255,0.1), 0 3px 10px rgba(0,0,0,0.5);
+    }
+
+    .player-panel.player-type-human .btn-giant-action .btn-badge,
+    .player-panel.player-type-human .btn-defend-action .btn-badge {
+        font-size: 0.65rem;
+        line-height: 1.1;
+        text-align: center;
+    }
+
+    .player-panel.player-type-human .charge-status {
+        display: block !important;
+        font-size: 0.65rem;
+        text-align: center;
+        color: var(--text-muted);
+        margin-top: 4px;
+        width: 100%;
+        white-space: nowrap;
+    }
+
+    /* Hide charge status text during battle (when HUD is active) */
+    .player-panel.player-type-human:has(.battle-hud:not(.hidden)) .charge-status {
+        display: none !important;
+    }
+
+    /* --- AI PLAYER PANEL LAYOUT (Sleek HUD indicator, no buttons) --- */
+    .player-panel.player-type-ai {
+        background: rgba(8, 12, 28, 0.75) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px;
+        padding: 8px 10px !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+
+    .player-panel.player-type-ai .circular-gauge-wrapper,
+    .player-panel.player-type-ai .btn-giant-action,
+    .player-panel.player-type-ai .btn-defend-action {
+        display: none !important;
+    }
+
+    .player-panel.player-type-ai .charge-status {
+        display: block !important;
+        font-size: 0.65rem;
+        text-align: center;
+        color: var(--text-muted);
+        margin: 2px 0;
+        width: 100%;
+    }
+
+    .player-panel.player-type-ai .battle-hud {
+        display: flex !important;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+        margin-top: 4px;
+    }
+
+    .player-panel.player-type-ai .hud-stat span {
+        display: none !important; /* Hide long label to save space */
+    }
+
+    .player-panel.player-type-ai .hud-progress-bar {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        width: 100%;
+        margin: 2px 0;
+    }
+
+    .player-panel.player-type-ai .hud-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.65rem;
+        font-weight: 700;
+        width: 100%;
+    }
+
+    /* --- HOLOGRAPHIC LOTTERY OVERLAY MOBILE --- */
+    .lottery-overlay {
+        width: 90vw;
+        max-width: 320px;
+        top: 55px; /* Positioned right below top scoreboard header */
+        padding: 8px 12px;
+        z-index: 105;
+    }
+
+    .lottery-box {
+        flex-direction: column;
+        gap: 6px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .lottery-info {
+        align-items: center;
+        text-align: center;
+        min-width: 0;
+    }
+
+    .lottery-title {
+        font-size: 0.85rem;
+    }
+
+    .lottery-subtitle {
+        font-size: 0.55rem;
+    }
+
+    .lottery-reels {
+        width: 100%;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .lottery-reel {
+        width: 90px;
+        height: 28px;
+    }
+
+    .reel-item {
+        font-size: 0.7rem;
+    }
+
+    .reel-item.locked {
+        font-size: 0.75rem;
+    }
+
+    .lottery-status {
+        min-width: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 0.7rem;
+    }
+
+    .lottery-status.success {
+        font-size: 0.75rem;
+    }
+
+    /* Fixed audio toggle position bottom-center to avoid overlaps */
+    .audio-toggle-btn {
+        bottom: 15px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: 42px;
+        height: 42px;
+        font-size: 1.1rem;
+    }
+
+    /* Victory stacked actions */
     .victory-actions {
         flex-direction: column;
         gap: 10px;
     }
 
     .stats-table-header, .stats-row {
-        font-size: 0.75rem;
-        grid-template-columns: 35px 1.2fr 0.8fr 0.8fr 0.8fr;
-        padding: 6px;
+        font-size: 0.72rem;
+        grid-template-columns: 30px 1.2fr 0.8fr 0.8fr 0.8fr;
+        padding: 6px 4px;
+    }
+
+    .victory-container {
+        padding: 20px 15px !important;
+        margin: 15px auto !important;
     }
 }
 
@@ -1666,7 +1920,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     font-size: 0.82rem;
 }
 
-.btn-giant-action:active {
+.btn-giant-action:active:not(.cooldown) {
     transform: scale(0.92);
 }
 
@@ -1706,6 +1960,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     display: none !important;
 }
 
+.btn-giant-action.cooldown,
 .btn-defend-action.cooldown {
     border: 2px solid #555555 !important;
     background: rgba(20, 20, 20, 0.85) !important;

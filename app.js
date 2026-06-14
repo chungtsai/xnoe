@@ -611,6 +611,7 @@ class BeybladePhysics {
         this.defendCooldown = 0; // Defense cooldown in seconds
         
         this.giantTimer = 0; // Giant mode duration in seconds
+        this.giantCooldown = 0; // Giant cooldown in seconds
     }
 
     update(dt, stadiumType, hazardZones) {
@@ -638,6 +639,18 @@ class BeybladePhysics {
         if (this.defendCooldown > 0) {
             this.defendCooldown -= dt * (16.666 / 1000);
             if (this.defendCooldown < 0) this.defendCooldown = 0;
+        }
+
+        // Update giant cooldown timer
+        if (this.giantCooldown > 0) {
+            this.giantCooldown -= dt * (16.666 / 1000);
+            if (this.giantCooldown <= 0) {
+                this.giantCooldown = 0;
+                // Make giant skill available again if player qualified initially
+                if (this.player.power >= 90) {
+                    this.player.giantSkillAvailable = true;
+                }
+            }
         }
         
         // Update giant mode timer
@@ -734,11 +747,11 @@ class BeybladePhysics {
         if (this.spin < 35) {
             this.isWobbling = true;
             this.wobblePhase += 0.25;
-            const currentBaseRadius = this.giantTimer > 0 ? this.baseRadius * 3 : this.baseRadius;
+            const currentBaseRadius = this.giantTimer > 0 ? this.baseRadius * 2 : this.baseRadius;
             this.radius = currentBaseRadius + Math.sin(this.wobblePhase) * 2;
         } else {
             this.isWobbling = false;
-            this.radius = this.giantTimer > 0 ? this.baseRadius * 3 : this.baseRadius;
+            this.radius = this.giantTimer > 0 ? this.baseRadius * 2 : this.baseRadius;
         }
 
         // 6. Elimination Checks
@@ -1163,8 +1176,8 @@ function updateRulesText() {
     
     let html = `
         <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
-        <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量和撞擊力呈指數級飆升，高低能量差距極大！</li>
-        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>10 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按鍵（如 P1 的 <strong>E</strong> 鍵）即可啟動！</li>
+        <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量 and 撞擊力呈指數級飆升，高低能量差距極大！</li>
+        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供<strong>【陀螺放大 2 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>2 倍</strong>，持續 <strong>5 秒</strong>，CD時間為 <strong>20 秒</strong>！在戰鬥中按鍵（如 P1 的 <strong>E</strong> 鍵）即可啟動！</li>
         <li><strong>🛡️ 瞬間防禦</strong>：在戰鬥中隨時按防禦鍵（如 P1 的 <strong>W</strong> 鍵），可發動 <strong>0.5 秒無敵盾</strong>，期間免受碰撞傷害與邊界損耗，CD時間為 <strong>10 秒</strong>！</li>
         <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
         <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
@@ -1269,7 +1282,8 @@ function transitionToPrepare() {
     // Reset UI Panel displays
     game.players.forEach(p => {
         const panel = document.getElementById(`panel-p${p.id}`);
-        panel.classList.remove('panel-disabled', 'active-glow-p1', 'active-glow-p2', 'active-glow-p3', 'active-glow-p4');
+        panel.classList.remove('panel-disabled', 'active-glow-p1', 'active-glow-p2', 'active-glow-p3', 'active-glow-p4', 'player-type-human', 'player-type-ai', 'player-type-none');
+        panel.classList.add(`player-type-${p.type}`);
         
         const chargeControls = panel.querySelector('.charge-controls');
         const battleHud = panel.querySelector('.battle-hud');
@@ -1401,16 +1415,17 @@ function lockPlayerPower(playerId) {
 
 function triggerGiantSkill(b) {
     b.giantTimer = 5.0; // 5 seconds duration
+    b.giantCooldown = 20.0; // 20 seconds cooldown
     
     // Scale stats
-    b.radius = b.baseRadius * 3;
-    b.mass = b.baseMass * 10;
-    b.force = b.baseForce * 10;
-    b.bounce = b.baseBounce * 10;
+    b.radius = b.baseRadius * 2;
+    b.mass = b.baseMass * 2;
+    b.force = b.baseForce * 2;
+    b.bounce = b.baseBounce * 2;
     
-    // Spin stats: boost spin and maxSpin by 10x
-    b.maxSpin = b.originalMaxSpin * 10;
-    b.spin = Math.min(b.spin * 10, b.maxSpin);
+    // Spin stats: boost spin and maxSpin by 2x
+    b.maxSpin = b.originalMaxSpin * 2;
+    b.spin = Math.min(b.spin * 2, b.maxSpin);
     
     // Play activation sound
     sounds.playGiantActivate();
@@ -1420,7 +1435,7 @@ function triggerGiantSkill(b) {
     game.particles.push(new Shockwave(b.x, b.y, b.radius * 1.8, '#ffffff'));
     
     // Damage text popup
-    game.particles.push(new DamageText(b.x, b.y, "十倍巨化!", b.player.color, true));
+    game.particles.push(new DamageText(b.x, b.y, "雙倍巨化!", b.player.color, true));
     
     // Create large spray of sparks
     createSparks(b.x, b.y, b.player.color, 30, 2.0);
@@ -2390,11 +2405,18 @@ function updateHUDValues() {
             circularFill.style.strokeDashoffset = offset;
         }
 
-        // Update Giant Skill button visibility
+        // Update Giant Skill button visibility and CD state
         const giantBtn = document.getElementById(`btn-giant-p${b.player.id}`);
         if (giantBtn) {
-            if (b.player.giantSkillAvailable && b.state === 'spinning') {
+            if (b.player.power >= 90 && b.state === 'spinning') {
                 giantBtn.classList.remove('hidden');
+                if (b.giantCooldown > 0) {
+                    giantBtn.classList.add('cooldown');
+                    giantBtn.innerHTML = `<span class="btn-badge">🌌 ${b.giantCooldown.toFixed(1)}s</span>`;
+                } else {
+                    giantBtn.classList.remove('cooldown');
+                    giantBtn.innerHTML = `<span class="btn-badge">🌌 巨化</span><span class="btn-key-hint">${b.player.giantKeyLabel}</span>`;
+                }
             } else {
                 giantBtn.classList.add('hidden');
             }
