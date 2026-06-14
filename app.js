@@ -1426,9 +1426,8 @@ function triggerGiantSkill(b) {
     b.force = b.baseForce * 2;
     b.bounce = b.baseBounce * 2;
     
-    // Spin stats: boost spin and maxSpin by 2x
+    // Spin stats: boost maxSpin by 2x
     b.maxSpin = b.originalMaxSpin * 2;
-    b.spin = Math.min(b.spin * 2, b.maxSpin);
     
     // Play activation sound
     sounds.playGiantActivate();
