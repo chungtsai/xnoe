@@ -305,6 +305,46 @@ class SoundManager {
         }
     }
     
+    playGiantActivate() {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        
+        // Deep rumble oscillator
+        const osc1 = this.ctx.createOscillator();
+        const gain1 = this.ctx.createGain();
+        osc1.connect(gain1);
+        gain1.connect(this.ctx.destination);
+        
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(80, now);
+        osc1.frequency.linearRampToValueAtTime(300, now + 0.5);
+        osc1.frequency.exponentialRampToValueAtTime(40, now + 1.2);
+        
+        gain1.gain.setValueAtTime(0.25, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        
+        osc1.start(now);
+        osc1.stop(now + 1.2);
+        
+        // High pitch siren sweep
+        const osc2 = this.ctx.createOscillator();
+        const gain2 = this.ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(this.ctx.destination);
+        
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(440, now);
+        osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.4);
+        osc2.frequency.exponentialRampToValueAtTime(880, now + 0.8);
+        
+        gain2.gain.setValueAtTime(0.12, now);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        
+        osc2.start(now);
+        osc2.stop(now + 0.8);
+    }
+    
     playUseItem(type) {
         if (this.isMuted) return;
         this.init();
@@ -449,10 +489,10 @@ const game = {
     battleTimer: 99.0,
     gameMode: 'normal',   // normal, item
     players: [
-        { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null },
-        { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null },
-        { id: 3, name: '綠色裂空', type: 'none', beybladeType: 'stamina', color: '#00ff66', glowColor: 'rgba(0, 255, 102, 0.4)', key: 'z', keyLabel: 'Z', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null },
-        { id: 4, name: '黃色雷光', type: 'none', beybladeType: 'balance', color: '#ffcc00', glowColor: 'rgba(255, 204, 0, 0.4)', key: 'm', keyLabel: 'M', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null }
+        { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', giantKey: 'e', giantKeyLabel: 'E', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
+        { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', giantKey: 'o', giantKeyLabel: 'O', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
+        { id: 3, name: '綠色裂空', type: 'none', beybladeType: 'stamina', color: '#00ff66', glowColor: 'rgba(0, 255, 102, 0.4)', key: 'z', keyLabel: 'Z', giantKey: 'x', giantKeyLabel: 'X', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
+        { id: 4, name: '黃色雷光', type: 'none', beybladeType: 'balance', color: '#ffcc00', glowColor: 'rgba(255, 204, 0, 0.4)', key: 'm', keyLabel: 'M', giantKey: 'n', giantKeyLabel: 'N', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false }
     ],
     stadiumType: 'standard', // standard, hazard, vortex
     countdownVal: 3,
@@ -481,15 +521,23 @@ class BeybladePhysics {
         
         // Style specific stats
         this.style = style;
-        this.mass = style.mass * (player.isCritical ? 1.18 : 1.0); // +18% weight if critical
+        // Non-linear scaling for greater charge advantage:
+        this.mass = style.mass * (1.0 + Math.pow(power / 100, 2) * 0.25) * (player.isCritical ? 1.18 : 1.0);
+        this.baseMass = this.mass;
+        
         this.baseRadius = player.isCritical ? 36 : 28;
         this.radius = this.baseRadius;
+        
         this.bounce = style.bounce;
-        this.force = style.force;
+        this.baseBounce = this.bounce;
+        
+        this.force = style.force * (1.0 + Math.pow(power / 100, 2) * 0.3);
+        this.baseForce = this.force;
         
         // Spin stats
-        this.maxSpin = 100 + power * 1.5; // Max spin RPM proxy
+        this.maxSpin = 80 + Math.pow(power / 100, 2) * 200; // Max spin RPM proxy, non-linear for greater charge advantage
         if (player.isCritical) this.maxSpin += 40; // Critical boost
+        this.originalMaxSpin = this.maxSpin;
         this.spin = this.maxSpin;
         
         this.angle = Math.random() * Math.PI * 2;
@@ -501,6 +549,8 @@ class BeybladePhysics {
         this.invincibleTimer = 0; // Invincibility duration in seconds
         this.atkBoostTimer = 0; // Attack boost duration in seconds
         this.hazardDamageCooldown = 0; // Hazard damage cooldown in seconds
+        
+        this.giantTimer = 0; // Giant mode duration in seconds
     }
 
     update(dt, stadiumType, hazardZones) {
@@ -522,6 +572,29 @@ class BeybladePhysics {
         if (this.hazardDamageCooldown > 0) {
             this.hazardDamageCooldown -= dt * (16.666 / 1000);
             if (this.hazardDamageCooldown < 0) this.hazardDamageCooldown = 0;
+        }
+        
+        // Update giant mode timer
+        if (this.giantTimer > 0) {
+            this.giantTimer -= dt * (16.666 / 1000);
+            if (this.giantTimer <= 0) {
+                this.giantTimer = 0;
+                // Revert stats
+                this.radius = this.baseRadius;
+                this.mass = this.baseMass;
+                this.force = this.baseForce;
+                this.bounce = this.baseBounce;
+                
+                // Revert max spin capability and clamp current spin if it exceeds the original
+                this.maxSpin = this.originalMaxSpin;
+                if (this.spin > this.maxSpin) {
+                    this.spin = this.maxSpin;
+                }
+                
+                // Visual spark blast to indicate ending of giant mode
+                createSparks(this.x, this.y, '#ffffff', 12, 1.0);
+                game.particles.push(new Shockwave(this.x, this.y, this.radius * 1.5, '#a0a0a0'));
+            }
         }
         
         // 1. Air Friction & Deceleration
@@ -595,10 +668,11 @@ class BeybladePhysics {
         if (this.spin < 35) {
             this.isWobbling = true;
             this.wobblePhase += 0.25;
-            this.radius = this.baseRadius + Math.sin(this.wobblePhase) * 2;
+            const currentBaseRadius = this.giantTimer > 0 ? this.baseRadius * 3 : this.baseRadius;
+            this.radius = currentBaseRadius + Math.sin(this.wobblePhase) * 2;
         } else {
             this.isWobbling = false;
-            this.radius = this.baseRadius;
+            this.radius = this.giantTimer > 0 ? this.baseRadius * 3 : this.baseRadius;
         }
 
         // 6. Elimination Checks
@@ -857,7 +931,7 @@ function setupUIListeners() {
         });
     }
 
-    // Launch buttons
+    // Launch and Giant buttons
     for (let i = 1; i <= 4; i++) {
         const btn = document.getElementById(`btn-charge-p${i}`);
         if (btn) {
@@ -871,9 +945,19 @@ function setupUIListeners() {
                 }
             });
         }
+        
+        const giantBtn = document.getElementById(`btn-giant-p${i}`);
+        if (giantBtn) {
+            giantBtn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if (game.state === STATE_BATTLE) {
+                    usePlayerGiantSkill(i);
+                }
+            });
+        }
     }
 
-    // Keyboard bindings for charging and item usage
+    // Keyboard bindings for charging, item usage, and giant skill
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();
         if (game.state === STATE_PREPARE) {
@@ -884,8 +968,12 @@ function setupUIListeners() {
             });
         } else if (game.state === STATE_BATTLE) {
             game.players.forEach(p => {
-                if (p.type === 'human' && p.key === key) {
-                    usePlayerItem(p.id);
+                if (p.type === 'human') {
+                    if (p.key === key) {
+                        usePlayerItem(p.id);
+                    } else if (p.giantKey === key) {
+                        usePlayerGiantSkill(p.id);
+                    }
                 }
             });
         }
@@ -997,7 +1085,8 @@ function updateRulesText() {
     
     let html = `
         <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
-        <li><strong>集氣能量條</strong>會快速上下移動，在最頂端（紅色臨界區）按下鎖定，可使出<strong>「極限爆發」最強陀螺</strong>！</li>
+        <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量和撞擊力呈指數級飆升，高低能量差距極大！</li>
+        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>1.5 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按下您的操作按鍵（如 P1 的 Q 鍵）即可啟動！</li>
         <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
         <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
     `;
@@ -1082,6 +1171,7 @@ function transitionToPrepare() {
         p.survivalTime = 0;
         p.hits = 0;
         p.item = null; // Reset items (items are not carried over/inherited)
+        p.giantSkillAvailable = false; // Reset giant skill availability
     });
 
     if (game.currentRound === 1) {
@@ -1123,6 +1213,12 @@ function transitionToPrepare() {
         if (btn) {
             btn.className = 'btn-charge-circle'; // Reset class list to default
             btn.innerHTML = `<span class="btn-badge">P${p.id}</span><span class="btn-key-hint">${p.keyLabel}</span>`;
+        }
+        
+        // Hide giant button during setup/preparation
+        const giantBtn = document.getElementById(`btn-giant-p${p.id}`);
+        if (giantBtn) {
+            giantBtn.classList.add('hidden');
         }
 
         // Update score dots classes
@@ -1175,6 +1271,9 @@ function lockPlayerPower(playerId) {
     // Critical hit mechanic (94%-100% threshold)
     p.isCritical = p.power >= 94;
     
+    // Giant skill available at 90% or above
+    p.giantSkillAvailable = p.power >= 90;
+    
     const statusEl = document.getElementById(`p${p.id}-charge-status`);
     const panel = document.getElementById(`panel-p${p.id}`);
     
@@ -1191,8 +1290,12 @@ function lockPlayerPower(playerId) {
     }
 
     if (p.isCritical) {
-        statusEl.innerText = `💥 極限爆發 (${p.power}%) 💥`;
-        statusEl.className = 'charge-status perfect-locked';
+        statusEl.innerText = `💥 極限巨化爆發 (${p.power}%) 💥`;
+        statusEl.className = 'charge-status perfect-locked giant-locked';
+        panel.classList.add(`active-glow-p${p.id}`);
+    } else if (p.giantSkillAvailable) {
+        statusEl.innerText = `🌌 巨化準備 (${p.power}%) 🌌`;
+        statusEl.className = 'charge-status giant-locked';
         panel.classList.add(`active-glow-p${p.id}`);
     } else {
         statusEl.innerText = `已鎖定: ${p.power}%`;
@@ -1201,6 +1304,52 @@ function lockPlayerPower(playerId) {
 
     // Check if everyone is locked
     checkEveryoneLocked();
+}
+
+function triggerGiantSkill(b) {
+    b.giantTimer = 5.0; // 5 seconds duration
+    
+    // Scale stats
+    b.radius = b.baseRadius * 3;
+    b.mass = b.baseMass * 1.5;
+    b.force = b.baseForce * 1.5;
+    b.bounce = b.baseBounce * 1.5;
+    
+    // Spin stats: boost spin and maxSpin by 1.5x
+    b.maxSpin = b.originalMaxSpin * 1.5;
+    b.spin = Math.min(b.spin * 1.5, b.maxSpin);
+    
+    // Play activation sound
+    sounds.playGiantActivate();
+    
+    // Mega shockwave particles
+    game.particles.push(new Shockwave(b.x, b.y, b.radius * 1.2, b.player.color));
+    game.particles.push(new Shockwave(b.x, b.y, b.radius * 1.8, '#ffffff'));
+    
+    // Damage text popup
+    game.particles.push(new DamageText(b.x, b.y, "極限巨化!", b.player.color, true));
+    
+    // Create large spray of sparks
+    createSparks(b.x, b.y, b.player.color, 30, 2.0);
+}
+
+function usePlayerGiantSkill(playerId) {
+    const p = game.players.find(x => x.id === playerId);
+    if (!p || p.type === 'none') return;
+    
+    const b = game.activeBeyblades.find(x => x.player.id === playerId);
+    if (!b || b.state !== 'spinning') return;
+
+    if (p.giantSkillAvailable) {
+        p.giantSkillAvailable = false;
+        triggerGiantSkill(b);
+        
+        // Hide giant button immediately for human players
+        const giantBtn = document.getElementById(`btn-giant-p${p.id}`);
+        if (giantBtn) {
+            giantBtn.classList.add('hidden');
+        }
+    }
 }
 
 function usePlayerItem(playerId) {
@@ -1225,14 +1374,14 @@ function usePlayerItem(playerId) {
         createSparks(b.x, b.y, '#00ff66', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#00ff66'));
     } else if (itemType === 'invincible') {
-        // 12 seconds of invincibility (extended two times)
-        b.invincibleTimer = 12.0;
+        // 3 seconds of invincibility
+        b.invincibleTimer = 3.0;
         // Gold sparks visual effect
         createSparks(b.x, b.y, '#ffaa00', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ffaa00'));
     } else if (itemType === 'spike') {
-        // 12 seconds of attack boost (100% increased attack power - extended two times)
-        b.atkBoostTimer = 12.0;
+        // 3 seconds of attack boost (100% increased attack power)
+        b.atkBoostTimer = 3.0;
         // Hot red sparks visual effect
         createSparks(b.x, b.y, '#ff3300', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ff3300'));
@@ -1437,8 +1586,8 @@ function transitionToBattle() {
         const tangentOffset = 0.5; // radians slice
         const finalAngle = centerAngle + (Math.random() > 0.5 ? tangentOffset : -tangentOffset);
         
-        // Velocity multiplier determined by power locked
-        const launchSpeed = style.speed * (4.0 + (p.power / 100) * 6.5);
+        // Velocity multiplier determined by power locked - quadratic scaling for greater advantage
+        const launchSpeed = style.speed * (3.5 + Math.pow(p.power / 100, 2) * 7.5);
         const vx = Math.cos(finalAngle) * launchSpeed;
         const vy = Math.sin(finalAngle) * launchSpeed;
         
@@ -1660,72 +1809,101 @@ function updatePhysics(dt) {
     game.activeBeyblades.forEach(b => {
         b.update(dt, game.stadiumType, game.hazardZones);
         
-        if (b.state === 'spinning' && game.gameMode === 'item') {
-            // 1. Item Collection check
-            for (let i = game.items.length - 1; i >= 0; i--) {
-                const item = game.items[i];
-                const dist = Math.hypot(b.x - item.x, b.y - item.y);
-                if (dist < b.radius + item.radius) {
-                    // Collect item (replaces existing one)
-                    b.player.item = item.type;
-                    sounds.playCollectItem(item.type);
-                    let sparkColor = '#ffaa00';
-                    if (item.type === 'heal') sparkColor = '#00ff66';
-                    else if (item.type === 'spike') sparkColor = '#ff3300';
-                    else if (item.type === 'missile') sparkColor = '#df00ff';
-                    createSparks(item.x, item.y, sparkColor, 8, 1.0);
-                    game.items.splice(i, 1);
+        if (b.state === 'spinning') {
+            // AI Decision to use Giant Skill (available in all game modes)
+            if (b.player.type === 'ai' && b.player.giantSkillAvailable) {
+                let shouldUseGiant = false;
+                // AI uses giant skill if there's any active opponent close by
+                const closeOpponent = game.activeBeyblades.some(other => {
+                    if (other === b || other.state !== 'spinning') return false;
+                    const dist = Math.hypot(other.x - b.x, other.y - b.y);
+                    return dist < 140; // close range trigger
+                });
+                if (closeOpponent) {
+                    shouldUseGiant = true;
+                }
+                
+                if (shouldUseGiant) {
+                    if (!b.aiUseGiantDelay) {
+                        b.aiUseGiantDelay = 5 + Math.floor(Math.random() * 15); // delay 5 to 20 frames
+                    }
+                    b.aiUseGiantDelay--;
+                    if (b.aiUseGiantDelay <= 0) {
+                        usePlayerGiantSkill(b.player.id);
+                        b.aiUseGiantDelay = null;
+                    }
+                } else {
+                    b.aiUseGiantDelay = null;
                 }
             }
-            
-            // 2. AI Decision to use item
-            if (b.player.type === 'ai' && b.player.item) {
-                let shouldUse = false;
-                if (b.player.item === 'heal') {
-                    if (b.spin < b.maxSpin * 0.6) {
-                        shouldUse = true;
-                    }
-                } else if (b.player.item === 'invincible') {
-                    // Check if another spinner is close by
-                    const closeOpponent = game.activeBeyblades.some(other => {
-                        if (other === b || other.state !== 'spinning') return false;
-                        const dist = Math.hypot(other.x - b.x, other.y - b.y);
-                        return dist < 120;
-                    });
-                    if (closeOpponent) {
-                        shouldUse = true;
-                    }
-                } else if (b.player.item === 'spike') {
-                    // Use spike when an opponent is close by
-                    const closeOpponent = game.activeBeyblades.some(other => {
-                        if (other === b || other.state !== 'spinning') return false;
-                        const dist = Math.hypot(other.x - b.x, other.y - b.y);
-                        return dist < 100;
-                    });
-                    if (closeOpponent) {
-                        shouldUse = true;
-                    }
-                } else if (b.player.item === 'missile') {
-                    // Use missile if there's any active opponent spinning
-                    const activeOpponents = game.activeBeyblades.some(other => {
-                        return other !== b && other.state === 'spinning';
-                    });
-                    if (activeOpponents) {
-                        shouldUse = true;
+
+            if (game.gameMode === 'item') {
+                // 1. Item Collection check
+                for (let i = game.items.length - 1; i >= 0; i--) {
+                    const item = game.items[i];
+                    const dist = Math.hypot(b.x - item.x, b.y - item.y);
+                    if (dist < b.radius + item.radius) {
+                        // Collect item (replaces existing one)
+                        b.player.item = item.type;
+                        sounds.playCollectItem(item.type);
+                        let sparkColor = '#ffaa00';
+                        if (item.type === 'heal') sparkColor = '#00ff66';
+                        else if (item.type === 'spike') sparkColor = '#ff3300';
+                        else if (item.type === 'missile') sparkColor = '#df00ff';
+                        createSparks(item.x, item.y, sparkColor, 8, 1.0);
+                        game.items.splice(i, 1);
                     }
                 }
                 
-                if (shouldUse) {
-                    if (!b.aiUseItemDelay) {
-                        b.aiUseItemDelay = 10 + Math.floor(Math.random() * 20); // 10-30 frames delay
+                // 2. AI Decision to use item
+                if (b.player.type === 'ai' && b.player.item) {
+                    let shouldUse = false;
+                    if (b.player.item === 'heal') {
+                        if (b.spin < b.maxSpin * 0.6) {
+                            shouldUse = true;
+                        }
+                    } else if (b.player.item === 'invincible') {
+                        // Check if another spinner is close by
+                        const closeOpponent = game.activeBeyblades.some(other => {
+                            if (other === b || other.state !== 'spinning') return false;
+                            const dist = Math.hypot(other.x - b.x, other.y - b.y);
+                            return dist < 120;
+                        });
+                        if (closeOpponent) {
+                            shouldUse = true;
+                        }
+                    } else if (b.player.item === 'spike') {
+                        // Use spike when an opponent is close by
+                        const closeOpponent = game.activeBeyblades.some(other => {
+                            if (other === b || other.state !== 'spinning') return false;
+                            const dist = Math.hypot(other.x - b.x, other.y - b.y);
+                            return dist < 100;
+                        });
+                        if (closeOpponent) {
+                            shouldUse = true;
+                        }
+                    } else if (b.player.item === 'missile') {
+                        // Use missile if there's any active opponent spinning
+                        const activeOpponents = game.activeBeyblades.some(other => {
+                            return other !== b && other.state === 'spinning';
+                        });
+                        if (activeOpponents) {
+                            shouldUse = true;
+                        }
                     }
-                    b.aiUseItemDelay--;
-                    if (b.aiUseItemDelay <= 0) {
-                        usePlayerItem(b.player.id);
+                    
+                    if (shouldUse) {
+                        if (!b.aiUseItemDelay) {
+                            b.aiUseItemDelay = 10 + Math.floor(Math.random() * 20); // 10-30 frames delay
+                        }
+                        b.aiUseItemDelay--;
+                        if (b.aiUseItemDelay <= 0) {
+                            usePlayerItem(b.player.id);
+                            b.aiUseItemDelay = null;
+                        }
+                    } else {
                         b.aiUseItemDelay = null;
                     }
-                } else {
-                    b.aiUseItemDelay = null;
                 }
             }
         }
@@ -1906,6 +2084,16 @@ function updateHUDValues() {
         if (circularFill) {
             const offset = 251.3 - (spinPct / 100) * 251.3;
             circularFill.style.strokeDashoffset = offset;
+        }
+
+        // Update Giant Skill button visibility
+        const giantBtn = document.getElementById(`btn-giant-p${b.player.id}`);
+        if (giantBtn) {
+            if (b.player.giantSkillAvailable && b.state === 'spinning') {
+                giantBtn.classList.remove('hidden');
+            } else {
+                giantBtn.classList.add('hidden');
+            }
         }
 
         // Update inner button visual appearance based on item possession
@@ -2617,6 +2805,37 @@ function drawBeyblade(b) {
         }
         ctx.closePath();
         ctx.stroke();
+        ctx.restore();
+    }
+
+    // Giant aura effect if giant mode is active
+    if (b.giantTimer > 0) {
+        ctx.save();
+        ctx.rotate(-b.angle); // Un-rotate to keep details static
+        ctx.shadowBlur = 35;
+        ctx.shadowColor = b.player.color;
+        
+        // Draw a pulse energy shield ring around the giant top
+        const pulse = 0.5 + Math.sin(performance.now() / 60) * 0.25;
+        ctx.strokeStyle = b.player.color;
+        ctx.lineWidth = 4;
+        ctx.globalAlpha = pulse;
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, b.radius + 10, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Add electrical sparks inside the ring
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = pulse * 0.8;
+        ctx.beginPath();
+        ctx.arc(0, 0, b.radius + 10, performance.now() / 150, performance.now() / 150 + Math.PI * 0.3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, b.radius + 10, performance.now() / 150 + Math.PI, performance.now() / 150 + Math.PI * 1.3);
+        ctx.stroke();
+        
         ctx.restore();
     }
 

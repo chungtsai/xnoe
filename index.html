@@ -189,7 +189,8 @@
                         <h3>遊戲規則：</h3>
                         <ul id="game-rules-list">
                             <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
-                            <li><strong>集氣能量條</strong>會快速上下移動，在最頂端（紅色臨界區）按下鎖定，可使出<strong>「極限爆發」最強陀螺</strong>！</li>
+                            <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量和撞擊力呈指數級飆升，高低能量差距極大！</li>
+                            <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供一次<strong>【陀螺放大 3 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>1.5 倍</strong>，持續 <strong>5 秒</strong>！在戰鬥中按下您的操作按鍵（如 P1 的 Q 鍵）即可啟動！</li>
                             <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
                             <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
                         </ul>
@@ -236,14 +237,20 @@
                     <div class="panel-body">
                         <!-- Setup/Charging State UI -->
                         <div class="charge-controls">
-                            <div class="circular-gauge-wrapper">
-                                <svg class="progress-ring" width="100" height="100">
-                                    <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
-                                    <circle class="progress-ring-fill" id="p1-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
-                                </svg>
-                                <button class="btn-charge-circle" id="btn-charge-p1" aria-label="鎖定能量">
-                                    <span class="btn-badge">P1</span>
-                                    <span class="btn-key-hint">Q</span>
+                            <div class="controls-row">
+                                <div class="circular-gauge-wrapper">
+                                    <svg class="progress-ring" width="100" height="100">
+                                        <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                                        <circle class="progress-ring-fill" id="p1-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                                    </svg>
+                                    <button class="btn-charge-circle" id="btn-charge-p1" aria-label="鎖定能量">
+                                        <span class="btn-badge">P1</span>
+                                        <span class="btn-key-hint">Q</span>
+                                    </button>
+                                </div>
+                                <button class="btn-giant-action hidden" id="btn-giant-p1" aria-label="發動巨化">
+                                    <span class="btn-badge">🌌 巨化</span>
+                                    <span class="btn-key-hint">E</span>
                                 </button>
                             </div>
                             <div class="charge-status" id="p1-charge-status">等待集氣...</div>
@@ -275,14 +282,20 @@
                     <div class="panel-body">
                         <!-- Setup/Charging State UI -->
                         <div class="charge-controls">
-                            <div class="circular-gauge-wrapper">
-                                <svg class="progress-ring" width="100" height="100">
-                                    <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
-                                    <circle class="progress-ring-fill" id="p2-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
-                                </svg>
-                                <button class="btn-charge-circle" id="btn-charge-p2" aria-label="鎖定能量">
-                                    <span class="btn-badge">P2</span>
-                                    <span class="btn-key-hint">P</span>
+                            <div class="controls-row">
+                                <div class="circular-gauge-wrapper">
+                                    <svg class="progress-ring" width="100" height="100">
+                                        <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                                        <circle class="progress-ring-fill" id="p2-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                                    </svg>
+                                    <button class="btn-charge-circle" id="btn-charge-p2" aria-label="鎖定能量">
+                                        <span class="btn-badge">P2</span>
+                                        <span class="btn-key-hint">P</span>
+                                    </button>
+                                </div>
+                                <button class="btn-giant-action hidden" id="btn-giant-p2" aria-label="發動巨化">
+                                    <span class="btn-badge">🌌 巨化</span>
+                                    <span class="btn-key-hint">O</span>
                                 </button>
                             </div>
                             <div class="charge-status" id="p2-charge-status">等待集氣...</div>
@@ -339,14 +352,20 @@
                     <div class="panel-body">
                         <!-- Setup/Charging State UI -->
                         <div class="charge-controls">
-                            <div class="circular-gauge-wrapper">
-                                <svg class="progress-ring" width="100" height="100">
-                                    <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
-                                    <circle class="progress-ring-fill" id="p3-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
-                                </svg>
-                                <button class="btn-charge-circle" id="btn-charge-p3" aria-label="鎖定能量">
-                                    <span class="btn-badge">P3</span>
-                                    <span class="btn-key-hint">Z</span>
+                            <div class="controls-row">
+                                <div class="circular-gauge-wrapper">
+                                    <svg class="progress-ring" width="100" height="100">
+                                        <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                                        <circle class="progress-ring-fill" id="p3-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                                    </svg>
+                                    <button class="btn-charge-circle" id="btn-charge-p3" aria-label="鎖定能量">
+                                        <span class="btn-badge">P3</span>
+                                        <span class="btn-key-hint">Z</span>
+                                    </button>
+                                </div>
+                                <button class="btn-giant-action hidden" id="btn-giant-p3" aria-label="發動巨化">
+                                    <span class="btn-badge">🌌 巨化</span>
+                                    <span class="btn-key-hint">X</span>
                                 </button>
                             </div>
                             <div class="charge-status" id="p3-charge-status">等待集氣...</div>
@@ -378,14 +397,20 @@
                     <div class="panel-body">
                         <!-- Setup/Charging State UI -->
                         <div class="charge-controls">
-                            <div class="circular-gauge-wrapper">
-                                <svg class="progress-ring" width="100" height="100">
-                                    <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
-                                    <circle class="progress-ring-fill" id="p4-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
-                                </svg>
-                                <button class="btn-charge-circle" id="btn-charge-p4" aria-label="鎖定能量">
-                                    <span class="btn-badge">P4</span>
-                                    <span class="btn-key-hint">M</span>
+                            <div class="controls-row">
+                                <div class="circular-gauge-wrapper">
+                                    <svg class="progress-ring" width="100" height="100">
+                                        <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.06)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+                                        <circle class="progress-ring-fill" id="p4-circular-fill" stroke-width="8" fill="transparent" r="40" cx="50" cy="50" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+                                    </svg>
+                                    <button class="btn-charge-circle" id="btn-charge-p4" aria-label="鎖定能量">
+                                        <span class="btn-badge">P4</span>
+                                        <span class="btn-key-hint">M</span>
+                                    </button>
+                                </div>
+                                <button class="btn-giant-action hidden" id="btn-giant-p4" aria-label="發動巨化">
+                                    <span class="btn-badge">🌌 巨化</span>
+                                    <span class="btn-key-hint">N</span>
                                 </button>
                             </div>
                             <div class="charge-status" id="p4-charge-status">等待集氣...</div>
