@@ -1102,20 +1102,20 @@ function usePlayerItem(playerId) {
     sounds.playUseItem(itemType);
     
     if (itemType === 'heal') {
-        // Heal 10% of max spin
-        b.spin = Math.min(b.spin + b.maxSpin * 0.1, b.maxSpin);
+        // Heal 20% of max spin (doubled ability)
+        b.spin = Math.min(b.spin + b.maxSpin * 0.2, b.maxSpin);
         // Green sparks visual effect
         createSparks(b.x, b.y, '#00ff66', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#00ff66'));
     } else if (itemType === 'invincible') {
-        // 3 seconds of invincibility
-        b.invincibleTimer = 3.0;
+        // 6 seconds of invincibility (doubled duration)
+        b.invincibleTimer = 6.0;
         // Gold sparks visual effect
         createSparks(b.x, b.y, '#ffaa00', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ffaa00'));
     } else if (itemType === 'spike') {
-        // 3 seconds of attack boost (10% increased attack power)
-        b.atkBoostTimer = 3.0;
+        // 6 seconds of attack boost (100% increased attack power - doubled duration and ability)
+        b.atkBoostTimer = 6.0;
         // Hot red sparks visual effect
         createSparks(b.x, b.y, '#ff3300', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ff3300'));
@@ -1544,11 +1544,11 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         // Multiplier based on Style Knockback force
         let b1ForceVal = b1.force;
         if (b1.atkBoostTimer > 0) {
-            b1ForceVal *= 1.1;
+            b1ForceVal *= 2.0; // Doubled ability: 100% attack boost (was 10%)
         }
         let b2ForceVal = b2.force;
         if (b2.atkBoostTimer > 0) {
-            b2ForceVal *= 1.1;
+            b2ForceVal *= 2.0; // Doubled ability: 100% attack boost (was 10%)
         }
         const forceMultiplier = (b1ForceVal + b2ForceVal) * 0.5;
         impulseScalar *= forceMultiplier;
@@ -1575,11 +1575,11 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         // Attack-type inflicts more spin drain on opponent (boosted if attacker has active attack boost)
         let b2AtkForce = b2.style.force;
         if (b2.atkBoostTimer > 0) {
-            b2AtkForce *= 1.1;
+            b2AtkForce *= 2.0; // Doubled ability: 100% spin drain boost (was 10%)
         }
         let b1AtkForce = b1.style.force;
         if (b1.atkBoostTimer > 0) {
-            b1AtkForce *= 1.1;
+            b1AtkForce *= 2.0; // Doubled ability: 100% spin drain boost (was 10%)
         }
         
         const p1Drain = spinImpactLoss * b2AtkForce * 0.5;
