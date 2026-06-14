@@ -311,7 +311,8 @@ const BEYBLADE_STYLES = {
 const game = {
     state: STATE_SETUP,
     currentRound: 1,
-    battleTimer: 30.0,
+    maxBattleTimer: 99.0, // Default to 99.0
+    battleTimer: 99.0,
     players: [
         { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0 },
         { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0 },
@@ -623,6 +624,16 @@ function setupUIListeners() {
     document.getElementById('arena-select').addEventListener('change', (e) => {
         game.stadiumType = e.target.value;
     });
+
+    // Battle Duration Selection
+    const durationSelect = document.getElementById('duration-select');
+    if (durationSelect) {
+        game.maxBattleTimer = parseFloat(durationSelect.value);
+        durationSelect.addEventListener('change', (e) => {
+            game.maxBattleTimer = parseFloat(e.target.value);
+            game.battleTimer = game.maxBattleTimer;
+        });
+    }
 
     // Launch buttons
     for (let i = 1; i <= 4; i++) {
@@ -1012,10 +1023,10 @@ function transitionToBattle() {
     const timerContainer = document.getElementById('battle-timer-container');
     if (timerContainer) timerContainer.classList.remove('timer-hidden');
     
-    game.battleTimer = 30.0;
+    game.battleTimer = game.maxBattleTimer;
     const timerValEl = document.getElementById('battle-timer-val');
     if (timerValEl) {
-        timerValEl.innerText = '30.0';
+        timerValEl.innerText = game.maxBattleTimer.toFixed(1);
         timerValEl.classList.remove('warning');
     }
 
@@ -1413,7 +1424,7 @@ function handleBattleTimeout() {
     
     // Set rankings for sorting
     spinningList.forEach(b => {
-        b.player.survivalTime = "30.00";
+        b.player.survivalTime = game.maxBattleTimer.toFixed(2);
     });
 
     if (spinningList.length > 0) {

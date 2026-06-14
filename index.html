@@ -164,6 +164,18 @@
                             <option value="vortex">渦流深淵場地 (Vortex Pit)</option>
                         </select>
                     </div>
+                    <div class="arena-select-container">
+                        <label for="duration-select">設定比賽時間</label>
+                        <select id="duration-select" class="select-styled">
+                            <option value="10">10 秒 (快速)</option>
+                            <option value="20">20 秒</option>
+                            <option value="30">30 秒 (標準)</option>
+                            <option value="45">45 秒</option>
+                            <option value="60">60 秒 (持久)</option>
+                            <option value="90">90 秒</option>
+                            <option value="99" selected>99 秒 (極限)</option>
+                        </select>
+                    </div>
                     <button id="btn-start-game" class="btn btn-primary btn-glow-anim">進入戰鬥準備</button>
                     <div class="game-rules-info">
                         <h3>遊戲規則：</h3>
@@ -283,10 +295,10 @@
 
                 <!-- MIDDLE: Arena Area -->
                 <div class="arena-container">
-                    <!-- 30 Second Timer Display -->
+                    <!-- Battle Timer Display -->
                     <div id="battle-timer-container" class="timer-hidden">
                         <span class="timer-label">BATTLE TIME</span>
-                        <span id="battle-timer-val">30.0</span>
+                        <span id="battle-timer-val">99.0</span>
                     </div>
 
                     <div class="arena-wrapper">
