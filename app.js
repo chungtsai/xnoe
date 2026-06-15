@@ -1785,7 +1785,7 @@ function updateRulesText() {
         <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量 and 撞擊力呈指數級飆升，高低能量差距極大！</li>
         <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供<strong>【陀螺放大 2 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>2 倍</strong>，並獲得<strong>【完全防禦】狀態免受任何傷害</strong>，持續 <strong>5 秒</strong>，CD時間為 <strong>20 秒</strong>！在戰鬥中按鍵（如 P1 的 <strong>E</strong> 鍵）即可啟動！</li>
         <li><strong>🛡️ 瞬間防禦</strong>：在戰鬥中隨時按防禦鍵（如 P1 的 <strong>W</strong> 鍵），可發動 <strong>0.5 秒無敵盾</strong>，期間免受碰撞傷害與邊界損耗，CD時間為 <strong>10 秒</strong>！</li>
-        <li><strong>🔥 火焰狂熱</strong>：在戰鬥中每撞擊對手陀螺累積達 <strong>30 次</strong>，將自動觸發火焰特效，攻擊力（碰撞擊退與損耗對手轉速的能力）提高 <strong>2 倍</strong>，持續 <strong>5 秒</strong>！釋放完成後重新開始累積！</li>
+        <li><strong>🔥 火焰狂熱</strong>：在戰鬥中每撞擊對手陀螺累積達 <strong>10 次</strong>，將自動觸發火焰特效，攻擊力（碰撞擊退與損耗對手轉速的能力）提高 <strong>2 倍</strong>，持續 <strong>5 秒</strong>！釋放完成後重新開始累積！</li>
         <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
         <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
     `;
@@ -3078,7 +3078,7 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         // Increment flame collision accumulation
         if (b1.flameModeTimer <= 0) {
             b1.flameCollisionCount++;
-            if (b1.flameCollisionCount >= 30) {
+            if (b1.flameCollisionCount >= 10) {
                 b1.flameModeTimer = 5.0;
                 b1.flameCollisionCount = 0;
                 sounds.playFlameMode();
@@ -3088,7 +3088,7 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         }
         if (b2.flameModeTimer <= 0) {
             b2.flameCollisionCount++;
-            if (b2.flameCollisionCount >= 30) {
+            if (b2.flameCollisionCount >= 10) {
                 b2.flameModeTimer = 5.0;
                 b2.flameCollisionCount = 0;
                 sounds.playFlameMode();
@@ -3203,7 +3203,7 @@ function updateHUDValues() {
                     statusEl.innerText = `🔥 火焰狂熱 (${b.flameModeTimer.toFixed(1)}s)`;
                     statusEl.className = 'hud-status-text flame-active-text';
                 } else {
-                    statusEl.innerText = `撞擊: ${b.flameCollisionCount}/30`;
+                    statusEl.innerText = `撞擊: ${b.flameCollisionCount}/10`;
                     statusEl.className = 'hud-status-text';
                 }
             }
