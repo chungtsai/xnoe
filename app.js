@@ -3064,18 +3064,19 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         const spinVel2 = -b2.spin * 0.08 * b2.radius;
         const relativeTangentVel = (rvx * tx + rvy * ty) + (spinVel1 - spinVel2);
 
-        // Deduct spins from impact friction
-        const spinImpactLoss = Math.min(Math.abs(relativeTangentVel) * 0.035, 12);
+        // Deduct spins from impact friction (Cap raised to 25 to allow high-energy spin differences)
+        const spinImpactLoss = Math.min(Math.abs(relativeTangentVel) * 0.035, 25);
         
         // Attack-type inflicts more spin drain on opponent (boosted if attacker has active attack boost)
-        let b2AtkForce = b2.style.force;
+        // Fixed: Use dynamic force (b2.force / b1.force) that scales with launch power instead of static style.force
+        let b2AtkForce = b2.force;
         if (b2.atkBoostTimer > 0) {
             b2AtkForce *= 2.0; // Doubled ability: 100% spin drain boost (was 10%)
         }
         if (b2.flameModeTimer > 0) {
             b2AtkForce *= 2.0; // Flame mode: 100% spin drain boost
         }
-        let b1AtkForce = b1.style.force;
+        let b1AtkForce = b1.force;
         if (b1.atkBoostTimer > 0) {
             b1AtkForce *= 2.0; // Doubled ability: 100% spin drain boost (was 10%)
         }
