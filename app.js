@@ -1350,14 +1350,18 @@ class BeybladePhysics {
         this.angle += (this.spin / 60);
 
         // 5. Wobbling when spin is low
+        let currentBaseRadius = this.giantTimer > 0 ? this.baseRadius * 2 : this.baseRadius;
+        if (this.atkBoostTimer > 0) {
+            currentBaseRadius += 8; // Spike Range: expand collision radius when active
+        }
+        
         if (this.spin < 35) {
             this.isWobbling = true;
             this.wobblePhase += 0.25;
-            const currentBaseRadius = this.giantTimer > 0 ? this.baseRadius * 2 : this.baseRadius;
             this.radius = currentBaseRadius + Math.sin(this.wobblePhase) * 2;
         } else {
             this.isWobbling = false;
-            this.radius = this.giantTimer > 0 ? this.baseRadius * 2 : this.baseRadius;
+            this.radius = currentBaseRadius;
         }
 
         // 6. Elimination Checks
@@ -1818,7 +1822,7 @@ function updateRulesText() {
         <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
         <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量 and 撞擊力呈指數級飆升，高低能量差距極大！</li>
         <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供<strong>【陀螺放大 2 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>2 倍</strong>，並獲得<strong>【完全防禦】狀態免受任何傷害</strong>，持續 <strong>5 秒</strong>，CD時間為 <strong>20 秒</strong>！在戰鬥中按鍵（如 P1 的 <strong>E</strong> 鍵）即可啟動！</li>
-        <li><strong>🛡️ 瞬間防禦</strong>：在戰鬥中隨時按防禦鍵（如 P1 的 <strong>W</strong> 鍵），可發動 <strong>0.5 秒無敵盾</strong>，期間免受碰撞傷害與邊界損耗，CD時間為 <strong>10 秒</strong>！</li>
+        <li><strong>🛡️ 防禦與落空機制</strong>：在戰鬥中按下防禦鍵（如 P1 的 <strong>W</strong> 鍵）可獲得 <strong>0.5 秒</strong>完全防禦狀態，CD 時間為 <strong>5 秒</strong>。若當下沒有被攻擊，將會受到懲罰：<strong>2 秒</strong>內防禦降低 <strong>2 倍</strong>（撞擊、牆壁磨損及場地傷害加倍）！</li>
         <li><strong>🔥 火焰狂熱</strong>：在戰鬥中每撞擊對手陀螺累積達 <strong>10 次</strong>，將自動觸發火焰特效，攻擊力（碰撞擊退與損耗對手轉速的能力）提高 <strong>2 倍</strong>，持續 <strong>5 秒</strong>！釋放完成後重新開始累積！</li>
         <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
         <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
@@ -1828,7 +1832,8 @@ function updateRulesText() {
         html += `
             <li class="item-rule-highlight"><strong>【道具賽規則】</strong>戰鬥中場地會隨機產生道具（💊 治癒、🛡️ 無敵、📌 刺針、🚀 飛彈）。陀螺碰撞即可拾取。</li>
             <li class="item-rule-highlight">每 10 秒會隨機發送一個道具給場上其中一位玩家，拾取/獲得後按鍵（如 P1 的 Q 鍵）即可<strong>手動發動道具</strong>！</li>
-            <li class="item-rule-highlight"><strong>🚀 飛彈</strong>：使用後在自身附近發送 10 枚炸彈進行連環轟炸，只會對範圍內的對手造成強力擊退與大量轉速耗損，且完全不會波及自己！</li>
+            <li class="item-rule-highlight"><strong>📌 刺針</strong>：使用後獲得 5 秒攻擊加倍與碰撞範圍擴大 (針刺伸出) 效果，可對碰撞對手造成雙倍退彈與轉速吸取！</li>
+            <li class="item-rule-highlight"><strong>🚀 飛彈</strong>：使用後在自身附近發送 5 枚炸彈進行連環轟炸，只會對範圍內的對手造成強力擊退與大量轉速耗損，且完全不會波及自己！</li>
         `;
     }
     
@@ -2159,15 +2164,15 @@ function usePlayerItem(playerId) {
         createSparks(b.x, b.y, '#ffaa00', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ffaa00'));
     } else if (itemType === 'spike') {
-        // 3 seconds of attack boost (100% increased attack power)
-        b.atkBoostTimer = 3.0;
+        // 5 seconds of attack boost (100% increased attack power and increased collision range)
+        b.atkBoostTimer = 5.0;
         // Hot red sparks visual effect
         createSparks(b.x, b.y, '#ff3300', 15, 1.2);
         game.particles.push(new Shockwave(b.x, b.y, b.radius * 2, '#ff3300'));
     } else if (itemType === 'missile') {
-        // Spawn 10 bombs around oneself cascading in a ring pattern
-        for (let i = 0; i < 10; i++) {
-            const angle = (i * Math.PI * 2 / 10) + (Math.random() * 0.4 - 0.2);
+        // Spawn 5 bombs around oneself cascading in a ring pattern
+        for (let i = 0; i < 5; i++) {
+            const angle = (i * Math.PI * 2 / 5) + (Math.random() * 0.4 - 0.2);
             const dist = 50 + Math.random() * 90; // 50 to 140px distance
             let targetX = b.x + Math.cos(angle) * dist;
             let targetY = b.y + Math.sin(angle) * dist;
