@@ -1148,6 +1148,9 @@ class BeybladePhysics {
         this.atkBoostTimer = 0; // Attack boost duration in seconds
         this.hazardDamageCooldown = 0; // Hazard damage cooldown in seconds
         this.defendCooldown = 0; // Defense cooldown in seconds
+        this.defenseActiveTimer = 0;
+        this.defenseBlockedAttack = false;
+        this.defenseDebuffTimer = 0;
         
         this.giantTimer = 0; // Giant mode duration in seconds
         this.giantCooldown = 0; // Giant cooldown in seconds
@@ -1205,6 +1208,27 @@ class BeybladePhysics {
         if (this.defendCooldown > 0) {
             this.defendCooldown -= dt * (16.666 / 1000);
             if (this.defendCooldown < 0) this.defendCooldown = 0;
+        }
+
+        // Update defense active timer
+        if (this.defenseActiveTimer > 0) {
+            this.defenseActiveTimer -= dt * (16.666 / 1000);
+            if (this.defenseActiveTimer <= 0) {
+                this.defenseActiveTimer = 0;
+                if (!this.defenseBlockedAttack) {
+                    // Start debuff: defense reduced 2x for 2 seconds
+                    this.defenseDebuffTimer = 2.0;
+                    // Visual popup text
+                    game.particles.push(new DamageText(this.x, this.y, "防禦落空! 2s內防禦減半", "#ff5500", true));
+                    createSparks(this.x, this.y, '#ff5500', 10, 1.0);
+                }
+            }
+        }
+
+        // Update defense debuff timer
+        if (this.defenseDebuffTimer > 0) {
+            this.defenseDebuffTimer -= dt * (16.666 / 1000);
+            if (this.defenseDebuffTimer < 0) this.defenseDebuffTimer = 0;
         }
 
         // Update giant cooldown timer
@@ -1276,11 +1300,18 @@ class BeybladePhysics {
                 const hzDy = this.y - zone.y;
                 const hzDist = Math.sqrt(hzDx * hzDx + hzDy * hzDy);
                 if (hzDist < zone.radius + this.radius) {
+                    if (this.defenseActiveTimer > 0) {
+                        this.defenseBlockedAttack = true;
+                    }
                     // Reduce spin rapidly and push away (skip if invincible or giant)
                     if (!(this.invincibleTimer > 0 || this.giantTimer > 0)) {
-                        this.spin -= 0.35;
+                        let hazardLoss = 0.35;
+                        if (this.defenseDebuffTimer > 0) {
+                            hazardLoss *= 2.0;
+                        }
+                        this.spin -= hazardLoss;
                         if (this.hazardDamageCooldown <= 0) {
-                            game.particles.push(new DamageText(this.x, this.y, 0.35, stadiumType === 'shadow' ? '#9400d3' : '#00e5ff'));
+                            game.particles.push(new DamageText(this.x, this.y, hazardLoss, stadiumType === 'shadow' ? '#9400d3' : '#00e5ff'));
                             this.hazardDamageCooldown = 0.25;
                         }
                     }
@@ -1361,7 +1392,10 @@ class BeybladePhysics {
                 
                 // Lose spin due to rough boundary friction (skip if invincible or giant)
                 if (!(this.invincibleTimer > 0 || this.giantTimer > 0)) {
-                    const spinPenalty = this.player.isCritical ? 1.5 : 3.5;
+                    let spinPenalty = this.player.isCritical ? 1.5 : 3.5;
+                    if (this.defenseDebuffTimer > 0) {
+                        spinPenalty *= 2.0;
+                    }
                     this.spin -= spinPenalty;
                     game.particles.push(new DamageText(this.x, this.y, spinPenalty, '#a0a0a0'));
                 }
@@ -2084,8 +2118,10 @@ function usePlayerDefense(playerId) {
     if (!b || b.state !== 'spinning') return;
 
     if (b.defendCooldown <= 0) {
-        b.defendCooldown = 10.0; // 10 seconds cooldown
+        b.defendCooldown = 5.0; // 5 seconds cooldown
         b.invincibleTimer = 0.5; // 0.5 seconds invincibility
+        b.defenseActiveTimer = 0.5; // 0.5 seconds defense window
+        b.defenseBlockedAttack = false;
         
         sounds.playDefense();
         
@@ -3042,23 +3078,38 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
             b1AtkForce *= 2.0; // Flame mode: 100% spin drain boost
         }
         
+        if (b1.defenseActiveTimer > 0) {
+            b1.defenseBlockedAttack = true;
+        }
+        if (b2.defenseActiveTimer > 0) {
+            b2.defenseBlockedAttack = true;
+        }
+
         const p1Drain = spinImpactLoss * b2AtkForce * 0.5;
         const p2Drain = spinImpactLoss * b1AtkForce * 0.5;
         
         if (!(b1.invincibleTimer > 0 || b1.giantTimer > 0)) {
-            b1.spin -= p1Drain;
-            if (p1Drain > 0.05) {
-                const isCrit = (b2.player.isCritical || b2.atkBoostTimer > 0 || b2.flameModeTimer > 0);
-                const color = isCrit ? '#ff4500' : '#ff3355';
-                game.particles.push(new DamageText(b1.x, b1.y, p1Drain, color, isCrit));
+            let actualP1Drain = p1Drain;
+            if (b1.defenseDebuffTimer > 0) {
+                actualP1Drain *= 2.0;
+            }
+            b1.spin -= actualP1Drain;
+            if (actualP1Drain > 0.05) {
+                const isCrit = (b2.player.isCritical || b2.atkBoostTimer > 0 || b2.flameModeTimer > 0 || b1.defenseDebuffTimer > 0);
+                const color = b1.defenseDebuffTimer > 0 ? '#ff5500' : (isCrit ? '#ff4500' : '#ff3355');
+                game.particles.push(new DamageText(b1.x, b1.y, actualP1Drain, color, isCrit));
             }
         }
         if (!(b2.invincibleTimer > 0 || b2.giantTimer > 0)) {
-            b2.spin -= p2Drain;
-            if (p2Drain > 0.05) {
-                const isCrit = (b1.player.isCritical || b1.atkBoostTimer > 0 || b1.flameModeTimer > 0);
-                const color = isCrit ? '#ff4500' : '#ff3355';
-                game.particles.push(new DamageText(b2.x, b2.y, p2Drain, color, isCrit));
+            let actualP2Drain = p2Drain;
+            if (b2.defenseDebuffTimer > 0) {
+                actualP2Drain *= 2.0;
+            }
+            b2.spin -= actualP2Drain;
+            if (actualP2Drain > 0.05) {
+                const isCrit = (b1.player.isCritical || b1.atkBoostTimer > 0 || b1.flameModeTimer > 0 || b2.defenseDebuffTimer > 0);
+                const color = b2.defenseDebuffTimer > 0 ? '#ff5500' : (isCrit ? '#ff4500' : '#ff3355');
+                game.particles.push(new DamageText(b2.x, b2.y, actualP2Drain, color, isCrit));
             }
         }
 
@@ -3941,6 +3992,21 @@ function drawBeyblade(b) {
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(0, 0, b.radius + 6, performance.now() / 200 + Math.PI, performance.now() / 200 + Math.PI * 1.4);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Broken shield / defense debuff indicator if defense is reduced 2x
+    if (b.defenseDebuffTimer > 0) {
+        ctx.save();
+        ctx.rotate(-b.angle); // Un-rotate to keep details static
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ff5500';
+        ctx.strokeStyle = `rgba(255, 85, 0, ${0.4 + Math.sin(performance.now() / 60) * 0.25})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]); // Dashed line to show vulnerability/broken shield
+        ctx.beginPath();
+        ctx.arc(0, 0, b.radius + 6, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
     }
