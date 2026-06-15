@@ -1042,7 +1042,7 @@ const BEYBLADE_STYLES = {
         mass: 1.35,
         speed: 1.45,
         friction: 0.0065, // Spin drop rate
-        bounce: 0.82,
+        bounce: 0.74,
         force: 1.6, // Knockback power
         desc: '速度極快且撞擊力道猛烈，能把對手撞飛，但自損也高。',
         stats: { speed: 85, weight: 55, stamina: 40 }
@@ -1052,7 +1052,7 @@ const BEYBLADE_STYLES = {
         mass: 1.85,
         speed: 0.75,
         friction: 0.005,
-        bounce: 0.35,
+        bounce: 0.32,
         force: 0.6,
         desc: '底盤沉重且高彈性減震，難以被擊退，但缺乏突進速度。',
         stats: { speed: 40, weight: 90, stamina: 55 }
@@ -1062,7 +1062,7 @@ const BEYBLADE_STYLES = {
         mass: 0.9,
         speed: 0.95,
         friction: 0.0028, // Spins longer
-        bounce: 0.7,
+        bounce: 0.63,
         force: 0.8,
         desc: '超低旋轉阻力，能夠極長效地自轉，但非常輕易被撞飛。',
         stats: { speed: 50, weight: 35, stamina: 95 }
@@ -1072,7 +1072,7 @@ const BEYBLADE_STYLES = {
         mass: 1.15,
         speed: 1.15,
         friction: 0.0048,
-        bounce: 0.65,
+        bounce: 0.59,
         force: 1.1,
         desc: '各項屬性非常均勻，具備一定的反擊力與不俗的續航。',
         stats: { speed: 65, weight: 65, stamina: 65 }
@@ -3046,7 +3046,7 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
             b2ForceVal *= 2.0; // Flame mode: 100% attack boost
         }
         const forceMultiplier = (b1ForceVal + b2ForceVal) * 0.5;
-        impulseScalar *= forceMultiplier;
+        impulseScalar *= forceMultiplier * 0.9; // Reduce collision bounce/knockback strength by 10%
 
         // Apply impulse forces
         b1.vx -= (impulseScalar / b1.mass) * nx;
