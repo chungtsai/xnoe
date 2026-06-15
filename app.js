@@ -900,6 +900,38 @@ class SoundManager {
         osc.stop(now + 0.3);
     }
 
+    playFlameMode() {
+        if (this.isMuted) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain1 = this.ctx.createGain();
+        const gain2 = this.ctx.createGain();
+        
+        osc1.connect(gain1);
+        gain1.connect(this.sfxGain);
+        osc2.connect(gain2);
+        gain2.connect(this.sfxGain);
+        
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(120, now);
+        osc1.frequency.exponentialRampToValueAtTime(800, now + 0.6);
+        gain1.gain.setValueAtTime(0.12, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(180, now);
+        osc2.frequency.exponentialRampToValueAtTime(1200, now + 0.5);
+        gain2.gain.setValueAtTime(0.15, now);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        
+        osc1.start(now);
+        osc1.stop(now + 0.6);
+        osc2.start(now);
+        osc2.stop(now + 0.5);
+    }
+
     playExplosion() {
         if (this.isMuted) return;
         this.init();
@@ -1119,6 +1151,8 @@ class BeybladePhysics {
         
         this.giantTimer = 0; // Giant mode duration in seconds
         this.giantCooldown = 0; // Giant cooldown in seconds
+        this.flameCollisionCount = 0; // Hits accumulated for flame mode
+        this.flameModeTimer = 0; // Flame mode active timer in seconds
     }
 
     update(dt, stadiumType, hazardZones) {
@@ -1134,6 +1168,31 @@ class BeybladePhysics {
         if (this.atkBoostTimer > 0) {
             this.atkBoostTimer -= dt * (16.666 / 1000);
             if (this.atkBoostTimer < 0) this.atkBoostTimer = 0;
+        }
+
+        // Update flame mode timer
+        if (this.flameModeTimer > 0) {
+            this.flameModeTimer -= dt * (16.666 / 1000);
+            if (this.flameModeTimer < 0) this.flameModeTimer = 0;
+            
+            // Spawn flame particles around the beyblade
+            const particleCount = Math.floor(Math.random() * 2) + 1;
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = Math.random() * this.radius;
+                const px = this.x + Math.cos(angle) * r;
+                const py = this.y + Math.sin(angle) * r;
+                
+                const vx = (Math.random() - 0.5) * 0.8 + (px - this.x) * 0.02;
+                const vy = -Math.random() * 1.5 - 0.5;
+                
+                const colors = ['#ff2200', '#ff6600', '#ffaa00', '#ffcc00'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                const size = 5 + Math.random() * 6;
+                const life = 12 + Math.random() * 12;
+                game.particles.push(new FlameParticle(px, py, vx, vy, color, size, life));
+            }
         }
         
         // Update hazard damage cooldown
@@ -1345,6 +1404,40 @@ class Spark {
         const alpha = this.life / this.maxLife;
         ctx.save();
         ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+class FlameParticle {
+    constructor(x, y, vx, vy, color, size, life) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.size = size;
+        this.life = life;
+        this.maxLife = life;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy -= 0.06; // float upwards visually (flame behavior)
+        this.vx *= 0.98; // slight drag
+        this.life--;
+    }
+
+    draw(ctx) {
+        const alpha = this.life / this.maxLife;
+        ctx.save();
+        ctx.shadowBlur = 15;
         ctx.shadowColor = this.color;
         ctx.fillStyle = this.color;
         ctx.globalAlpha = alpha;
@@ -1692,6 +1785,7 @@ function updateRulesText() {
         <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量 and 撞擊力呈指數級飆升，高低能量差距極大！</li>
         <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供<strong>【陀螺放大 2 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>2 倍</strong>，並獲得<strong>【完全防禦】狀態免受任何傷害</strong>，持續 <strong>5 秒</strong>，CD時間為 <strong>20 秒</strong>！在戰鬥中按鍵（如 P1 的 <strong>E</strong> 鍵）即可啟動！</li>
         <li><strong>🛡️ 瞬間防禦</strong>：在戰鬥中隨時按防禦鍵（如 P1 的 <strong>W</strong> 鍵），可發動 <strong>0.5 秒無敵盾</strong>，期間免受碰撞傷害與邊界損耗，CD時間為 <strong>10 秒</strong>！</li>
+        <li><strong>🔥 火焰狂熱</strong>：在戰鬥中每撞擊對手陀螺累積達 <strong>30 次</strong>，將自動觸發火焰特效，攻擊力（碰撞擊退與損耗對手轉速的能力）提高 <strong>2 倍</strong>，持續 <strong>5 秒</strong>！釋放完成後重新開始累積！</li>
         <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
         <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
     `;
@@ -2900,9 +2994,15 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         if (b1.atkBoostTimer > 0) {
             b1ForceVal *= 2.0; // Doubled ability: 100% attack boost (was 10%)
         }
+        if (b1.flameModeTimer > 0) {
+            b1ForceVal *= 2.0; // Flame mode: 100% attack boost
+        }
         let b2ForceVal = b2.force;
         if (b2.atkBoostTimer > 0) {
             b2ForceVal *= 2.0; // Doubled ability: 100% attack boost (was 10%)
+        }
+        if (b2.flameModeTimer > 0) {
+            b2ForceVal *= 2.0; // Flame mode: 100% attack boost
         }
         const forceMultiplier = (b1ForceVal + b2ForceVal) * 0.5;
         impulseScalar *= forceMultiplier;
@@ -2931,9 +3031,15 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         if (b2.atkBoostTimer > 0) {
             b2AtkForce *= 2.0; // Doubled ability: 100% spin drain boost (was 10%)
         }
+        if (b2.flameModeTimer > 0) {
+            b2AtkForce *= 2.0; // Flame mode: 100% spin drain boost
+        }
         let b1AtkForce = b1.style.force;
         if (b1.atkBoostTimer > 0) {
             b1AtkForce *= 2.0; // Doubled ability: 100% spin drain boost (was 10%)
+        }
+        if (b1.flameModeTimer > 0) {
+            b1AtkForce *= 2.0; // Flame mode: 100% spin drain boost
         }
         
         const p1Drain = spinImpactLoss * b2AtkForce * 0.5;
@@ -2942,16 +3048,16 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         if (!(b1.invincibleTimer > 0 || b1.giantTimer > 0)) {
             b1.spin -= p1Drain;
             if (p1Drain > 0.05) {
-                const isCrit = (b2.player.isCritical || b2.atkBoostTimer > 0);
-                const color = isCrit ? '#ffaa00' : '#ff3355';
+                const isCrit = (b2.player.isCritical || b2.atkBoostTimer > 0 || b2.flameModeTimer > 0);
+                const color = isCrit ? '#ff4500' : '#ff3355';
                 game.particles.push(new DamageText(b1.x, b1.y, p1Drain, color, isCrit));
             }
         }
         if (!(b2.invincibleTimer > 0 || b2.giantTimer > 0)) {
             b2.spin -= p2Drain;
             if (p2Drain > 0.05) {
-                const isCrit = (b1.player.isCritical || b1.atkBoostTimer > 0);
-                const color = isCrit ? '#ffaa00' : '#ff3355';
+                const isCrit = (b1.player.isCritical || b1.atkBoostTimer > 0 || b1.flameModeTimer > 0);
+                const color = isCrit ? '#ff4500' : '#ff3355';
                 game.particles.push(new DamageText(b2.x, b2.y, p2Drain, color, isCrit));
             }
         }
@@ -2968,6 +3074,28 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         b2.damageFlash = 6;
         b1.player.hits++;
         b2.player.hits++;
+
+        // Increment flame collision accumulation
+        if (b1.flameModeTimer <= 0) {
+            b1.flameCollisionCount++;
+            if (b1.flameCollisionCount >= 30) {
+                b1.flameModeTimer = 5.0;
+                b1.flameCollisionCount = 0;
+                sounds.playFlameMode();
+                createSparks(b1.x, b1.y, '#ff4500', 25, 1.6);
+                game.particles.push(new Shockwave(b1.x, b1.y, b1.radius * 2, '#ff4500'));
+            }
+        }
+        if (b2.flameModeTimer <= 0) {
+            b2.flameCollisionCount++;
+            if (b2.flameCollisionCount >= 30) {
+                b2.flameModeTimer = 5.0;
+                b2.flameCollisionCount = 0;
+                sounds.playFlameMode();
+                createSparks(b2.x, b2.y, '#ff4500', 25, 1.6);
+                game.particles.push(new Shockwave(b2.x, b2.y, b2.radius * 2, '#ff4500'));
+            }
+        }
 
         // Sound intensity depends on impulse size
         const collisionIntensity = Math.abs(impulseScalar);
@@ -3065,6 +3193,19 @@ function updateHUDValues() {
             } else {
                 btn.className = 'btn-charge-circle';
                 btn.innerHTML = `<span class="btn-badge" id="p${b.player.id}-btn-rpm">${Math.round(spinPct)}%</span><span class="btn-key-hint">${b.player.keyLabel}</span>`;
+            }
+        }
+
+        if (b.state === 'spinning') {
+            const statusEl = document.getElementById(`p${b.player.id}-hud-status`);
+            if (statusEl) {
+                if (b.flameModeTimer > 0) {
+                    statusEl.innerText = `🔥 火焰狂熱 (${b.flameModeTimer.toFixed(1)}s)`;
+                    statusEl.className = 'hud-status-text flame-active-text';
+                } else {
+                    statusEl.innerText = `撞擊: ${b.flameCollisionCount}/30`;
+                    statusEl.className = 'hud-status-text';
+                }
             }
         }
 
@@ -3836,6 +3977,48 @@ function drawBeyblade(b) {
         }
         ctx.closePath();
         ctx.stroke();
+        ctx.restore();
+    }
+
+    // Flame aura effect if flame mode is active
+    if (b.flameModeTimer > 0) {
+        ctx.save();
+        ctx.rotate(-b.angle); // Un-rotate to keep details static
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = '#ff4500';
+        ctx.strokeStyle = `rgba(255, 69, 0, ${0.5 + Math.sin(performance.now() / 50) * 0.3})`;
+        ctx.lineWidth = 3;
+        
+        ctx.beginPath();
+        const fireSpikes = 12;
+        const stepAngle = (Math.PI * 2) / fireSpikes;
+        const rotOffset = -performance.now() / 200;
+        
+        for (let i = 0; i < fireSpikes; i++) {
+            const angle = i * stepAngle + rotOffset;
+            const nextAngle = (i + 0.5) * stepAngle + rotOffset;
+            
+            const pulse = Math.sin((performance.now() / 100) + i) * 4;
+            const innerR = b.radius + 2;
+            const outerR = b.radius + 8 + pulse;
+            
+            if (i === 0) {
+                ctx.moveTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR);
+            } else {
+                ctx.lineTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR);
+            }
+            ctx.lineTo(Math.cos(nextAngle) * outerR, Math.sin(nextAngle) * outerR);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        
+        const fireGrad = ctx.createRadialGradient(0, 0, b.radius - 5, 0, 0, b.radius + 10);
+        fireGrad.addColorStop(0, 'rgba(255, 69, 0, 0)');
+        fireGrad.addColorStop(0.5, 'rgba(255, 100, 0, 0.15)');
+        fireGrad.addColorStop(1, 'rgba(255, 30, 0, 0)');
+        ctx.fillStyle = fireGrad;
+        ctx.fill();
+        
         ctx.restore();
     }
 

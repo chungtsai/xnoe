@@ -985,6 +985,23 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     font-weight: 700;
 }
 
+.flame-active-text {
+    color: #ff4500 !important;
+    text-shadow: 0 0 8px rgba(255, 69, 0, 0.8), 0 0 15px rgba(255, 140, 0, 0.5);
+    animation: flame-pulse 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes flame-pulse {
+    0% {
+        opacity: 0.85;
+        transform: scale(0.98);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+}
+
 .hud-stat-value {
     font-family: var(--font-heading);
     font-size: 1rem;
