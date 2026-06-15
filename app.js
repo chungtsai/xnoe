@@ -1217,8 +1217,8 @@ class BeybladePhysics {
                 const hzDy = this.y - zone.y;
                 const hzDist = Math.sqrt(hzDx * hzDx + hzDy * hzDy);
                 if (hzDist < zone.radius + this.radius) {
-                    // Reduce spin rapidly and push away (skip if invincible)
-                    if (!(this.invincibleTimer > 0)) {
+                    // Reduce spin rapidly and push away (skip if invincible or giant)
+                    if (!(this.invincibleTimer > 0 || this.giantTimer > 0)) {
                         this.spin -= 0.35;
                         if (this.hazardDamageCooldown <= 0) {
                             game.particles.push(new DamageText(this.x, this.y, 0.35, stadiumType === 'shadow' ? '#9400d3' : '#00e5ff'));
@@ -1300,8 +1300,8 @@ class BeybladePhysics {
                 this.vx -= 2 * dot * nx * 0.7;
                 this.vy -= 2 * dot * ny * 0.7;
                 
-                // Lose spin due to rough boundary friction (skip if invincible)
-                if (!(this.invincibleTimer > 0)) {
+                // Lose spin due to rough boundary friction (skip if invincible or giant)
+                if (!(this.invincibleTimer > 0 || this.giantTimer > 0)) {
                     const spinPenalty = this.player.isCritical ? 1.5 : 3.5;
                     this.spin -= spinPenalty;
                     game.particles.push(new DamageText(this.x, this.y, spinPenalty, '#a0a0a0'));
@@ -1690,7 +1690,7 @@ function updateRulesText() {
     let html = `
         <li>進入準備後，各玩家操作自己角落的集氣按鈕/按鍵。</li>
         <li><strong>集氣優勢提高</strong>：越高的能量能使陀螺的速度、轉速、重量 and 撞擊力呈指數級飆升，高低能量差距極大！</li>
-        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供<strong>【陀螺放大 2 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>2 倍</strong>，持續 <strong>5 秒</strong>，CD時間為 <strong>20 秒</strong>！在戰鬥中按鍵（如 P1 的 <strong>E</strong> 鍵）即可啟動！</li>
+        <li><strong>🌌 巨化爆發</strong>：若集氣能量達到 <strong>90% 以上</strong>，將在戰鬥中提供<strong>【陀螺放大 2 倍】</strong>技能，全部素質（重量、撞擊力、反彈係數、轉速）提高 <strong>2 倍</strong>，並獲得<strong>【完全防禦】狀態免受任何傷害</strong>，持續 <strong>5 秒</strong>，CD時間為 <strong>20 秒</strong>！在戰鬥中按鍵（如 P1 的 <strong>E</strong> 鍵）即可啟動！</li>
         <li><strong>🛡️ 瞬間防禦</strong>：在戰鬥中隨時按防禦鍵（如 P1 的 <strong>W</strong> 鍵），可發動 <strong>0.5 秒無敵盾</strong>，期間免受碰撞傷害與邊界損耗，CD時間為 <strong>10 秒</strong>！</li>
         <li>所有玩家準備就緒後，陀螺將同時射入場中。</li>
         <li>陀螺會隨時間減速，碰撞會損耗轉速。撐到最後仍在旋轉的玩家獲勝！</li>
@@ -2107,7 +2107,7 @@ function triggerExplosion(x, y, excludePlayerId = null) {
             b.vx += pushX * knockbackPower;
             b.vy += pushY * knockbackPower;
             
-            if (b.invincibleTimer <= 0) {
+            if (b.invincibleTimer <= 0 && b.giantTimer <= 0) {
                 const spinLoss = b.maxSpin * 0.3 * forceFactor;
                 b.spin = Math.max(0, b.spin - spinLoss);
                 b.damageFlash = 8;
@@ -2939,7 +2939,7 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         const p1Drain = spinImpactLoss * b2AtkForce * 0.5;
         const p2Drain = spinImpactLoss * b1AtkForce * 0.5;
         
-        if (!(b1.invincibleTimer > 0)) {
+        if (!(b1.invincibleTimer > 0 || b1.giantTimer > 0)) {
             b1.spin -= p1Drain;
             if (p1Drain > 0.05) {
                 const isCrit = (b2.player.isCritical || b2.atkBoostTimer > 0);
@@ -2947,7 +2947,7 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
                 game.particles.push(new DamageText(b1.x, b1.y, p1Drain, color, isCrit));
             }
         }
-        if (!(b2.invincibleTimer > 0)) {
+        if (!(b2.invincibleTimer > 0 || b2.giantTimer > 0)) {
             b2.spin -= p2Drain;
             if (p2Drain > 0.05) {
                 const isCrit = (b1.player.isCritical || b1.atkBoostTimer > 0);
