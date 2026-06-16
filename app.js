@@ -1104,7 +1104,7 @@ const game = {
     shakeIntensity: 0,
     items: [], // Items spawned on stadium floor
     itemSpawnTimer: 3.0, // Spawns items periodically
-    itemDistributeTimer: 20.0, // Every 20s randomly sends item to player
+    itemDistributeTimer: 15.0, // Every 15s randomly sends items to all players
     missiles: [] // Active missiles in the air/targeting
 };
 
@@ -1831,7 +1831,7 @@ function updateRulesText() {
     if (game.gameMode === 'item') {
         html += `
             <li class="item-rule-highlight"><strong>【道具賽規則】</strong>戰鬥中場地會隨機產生道具（💊 治癒、🛡️ 無敵、📌 刺針、🚀 飛彈）。陀螺碰撞即可拾取。</li>
-            <li class="item-rule-highlight">每 10 秒會隨機發送一個道具給場上其中一位玩家，拾取/獲得後按鍵（如 P1 的 Q 鍵）即可<strong>手動發動道具</strong>！</li>
+            <li class="item-rule-highlight">每 15 秒會隨機發送道具給場上所有玩家，獲得後按鍵（如 P1 的 Q 鍵）即可<strong>手動發動道具</strong>！</li>
             <li class="item-rule-highlight"><strong>📌 刺針</strong>：使用後獲得 5 秒攻擊加倍與碰撞範圍擴大 (針刺伸出) 效果，可對碰撞對手造成雙倍退彈與轉速吸取！</li>
             <li class="item-rule-highlight"><strong>🚀 飛彈</strong>：使用後在自身附近發送 5 枚炸彈進行連環轟炸，只會對範圍內的對手造成強力擊退與大量轉速耗損，且完全不會波及自己！</li>
         `;
@@ -2327,7 +2327,7 @@ function transitionToBattle() {
     game.particles = [];
     game.items = []; // Reset items on stadium floor
     game.itemSpawnTimer = 3.0; // Spawns first item 3 seconds in
-    game.itemDistributeTimer = 20.0; // Spawns first random distribution at 20s
+    game.itemDistributeTimer = 15.0; // Spawns first random distribution at 15s
     game.missiles = []; // Clear active missiles
     
     // Reset item lottery state
@@ -2339,7 +2339,7 @@ function transitionToBattle() {
             const progressFill = document.getElementById('item-timer-progress-fill');
             if (progressFill) progressFill.style.width = '100%';
             const timerVal = document.getElementById('item-lottery-timer-val');
-            if (timerVal) timerVal.innerText = '20.0s';
+            if (timerVal) timerVal.innerText = '15.0s';
         } else {
             itemLotteryContainer.classList.add('item-timer-hidden');
         }
@@ -2664,176 +2664,48 @@ function updatePhysics(dt) {
         const itemLotteryTimerValEl = document.getElementById('item-lottery-timer-val');
         const itemTimerProgressFillEl = document.getElementById('item-timer-progress-fill');
         
-        if (game.isDrawingItem) {
-            if (itemLotteryTimerValEl) itemLotteryTimerValEl.innerText = 'CHOOSE!';
-            if (itemTimerProgressFillEl) itemTimerProgressFillEl.style.width = '0%';
-        } else {
-            const displayTime = Math.max(0, game.itemDistributeTimer);
-            if (itemLotteryTimerValEl) itemLotteryTimerValEl.innerText = `${displayTime.toFixed(1)}s`;
-            if (itemTimerProgressFillEl) {
-                const pct = (displayTime / 20.0) * 100;
-                itemTimerProgressFillEl.style.width = `${pct}%`;
-            }
+        const displayTime = Math.max(0, game.itemDistributeTimer);
+        if (itemLotteryTimerValEl) itemLotteryTimerValEl.innerText = `${displayTime.toFixed(1)}s`;
+        if (itemTimerProgressFillEl) {
+            const pct = (displayTime / 15.0) * 100;
+            itemTimerProgressFillEl.style.width = `${pct}%`;
         }
 
-        if (!game.isDrawingItem) {
-            game.itemDistributeTimer -= deltaSeconds;
-            if (game.itemDistributeTimer <= 0) {
-                const spinningBodies = game.activeBeyblades.filter(b => b.state === 'spinning');
-                if (spinningBodies.length > 0) {
-                    // Start drawing sequence
-                    game.isDrawingItem = true;
-                    
-                    const targetBody = spinningBodies[Math.floor(Math.random() * spinningBodies.length)];
-                    const itemTypes = ['heal', 'invincible', 'spike', 'missile'];
+        game.itemDistributeTimer -= deltaSeconds;
+        if (game.itemDistributeTimer <= 0) {
+            const spinningBodies = game.activeBeyblades.filter(b => b.state === 'spinning');
+            if (spinningBodies.length > 0) {
+                const itemTypes = ['heal', 'invincible', 'spike', 'missile'];
+                const itemColors = {
+                    'heal': '#00ff66',
+                    'invincible': '#ffaa00',
+                    'spike': '#ff3300',
+                    'missile': '#df00ff'
+                };
+                const itemNames = {
+                    'heal': '💊 治癒',
+                    'invincible': '🛡️ 無敵',
+                    'spike': '📌 刺針',
+                    'missile': '🚀 飛彈'
+                };
+                
+                spinningBodies.forEach(targetBody => {
                     const randomItem = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+                    targetBody.player.item = randomItem;
                     
-                    game.drawWinnerId = targetBody.player.id;
-                    game.drawWinnerName = targetBody.player.name;
-                    game.drawWinnerColor = targetBody.player.color;
-                    game.drawItem = randomItem;
+                    let sparkColor = itemColors[randomItem] || '#ffffff';
+                    createSparks(targetBody.x, targetBody.y, sparkColor, 18, 1.3);
+                    game.particles.push(new Shockwave(targetBody.x, targetBody.y, targetBody.radius * 3.0, sparkColor));
                     
-                    game.drawTimer = 0;
-                    game.drawLastTickTime = 0;
-                    
-                    // Show overlay
-                    const overlay = document.getElementById('lottery-overlay');
-                    if (overlay) overlay.classList.remove('hidden');
-                    
-                    // Reset reel styles
-                    const playerReel = document.getElementById('lottery-player-reel');
-                    const itemReel = document.getElementById('lottery-item-reel');
-                    const statusText = document.getElementById('lottery-status-text');
-                    
-                    if (playerReel) {
-                        playerReel.innerHTML = '<div class="reel-item">???</div>';
-                        playerReel.querySelector('.reel-item').classList.remove('locked');
-                        playerReel.querySelector('.reel-item').style.color = '#fff';
-                        playerReel.querySelector('.reel-item').style.textShadow = '0 0 5px rgba(255,255,255,0.5)';
-                    }
-                    if (itemReel) {
-                        itemReel.innerHTML = '<div class="reel-item">???</div>';
-                        itemReel.querySelector('.reel-item').classList.remove('locked');
-                        itemReel.querySelector('.reel-item').style.color = '#fff';
-                        itemReel.querySelector('.reel-item').style.textShadow = '0 0 5px rgba(255,255,255,0.5)';
-                    }
-                    if (statusText) {
-                        statusText.innerText = '系統配對中...';
-                        statusText.className = 'lottery-status';
-                    }
-                } else {
-                    // No active spinner, reset timer
-                    game.itemDistributeTimer = 20.0;
-                }
-            }
-        } else {
-            game.drawTimer += deltaSeconds;
-            
-            const playerReel = document.getElementById('lottery-player-reel');
-            const itemReel = document.getElementById('lottery-item-reel');
-            const statusText = document.getElementById('lottery-status-text');
-            
-            const activeSpinners = game.activeBeyblades.filter(b => b.state === 'spinning');
-            
-            // Map item types to display strings
-            const itemMap = {
-                'heal': '💊 治癒',
-                'invincible': '🛡️ 無敵',
-                'spike': '📌 刺針',
-                'missile': '🚀 飛彈'
-            };
-            const itemColors = {
-                'heal': '#00ff66',
-                'invincible': '#ffaa00',
-                'spike': '#ff3300',
-                'missile': '#df00ff'
-            };
-            
-            // 1. Tick/rolling sound and visual changes
-            if (game.drawTimer < 1.4) {
-                // Determine tick interval based on time elapsed (slows down)
-                const tickInterval = 0.05 + (game.drawTimer / 1.4) * 0.15;
-                if (game.drawTimer - game.drawLastTickTime >= tickInterval) {
-                    game.drawLastTickTime = game.drawTimer;
-                    sounds.playLotteryTick();
-                    
-                    // Show random player name
-                    if (playerReel && activeSpinners.length > 0) {
-                        const randBody = activeSpinners[Math.floor(Math.random() * activeSpinners.length)];
-                        playerReel.innerHTML = `<div class="reel-item" style="color: ${randBody.player.color}; text-shadow: 0 0 8px ${randBody.player.glowColor || 'rgba(255,255,255,0.4)'}">${randBody.player.name}</div>`;
-                    }
-                    
-                    // Show random item
-                    if (itemReel) {
-                        const items = ['heal', 'invincible', 'spike', 'missile'];
-                        const randItem = items[Math.floor(Math.random() * items.length)];
-                        itemReel.innerHTML = `<div class="reel-item" style="color: ${itemColors[randItem]}; text-shadow: 0 0 8px ${itemColors[randItem]}">${itemMap[randItem]}</div>`;
-                    }
-                }
-            }
-            
-            // 2. Lock winner player at 1.4s
-            if (game.drawTimer >= 1.4 && game.drawTimer < 1.8) {
-                if (playerReel && !playerReel.querySelector('.reel-item').classList.contains('locked')) {
-                    sounds.playCollectItem('heal'); // play a select sound
-                    playerReel.innerHTML = `<div class="reel-item locked" style="color: ${game.drawWinnerColor}; text-shadow: 0 0 12px ${game.drawWinnerColor}">${game.drawWinnerName}</div>`;
-                    if (statusText) statusText.innerText = `選中：${game.drawWinnerName}`;
-                }
+                    // Show a floating visual text above each top to notify which item they got
+                    game.particles.push(new DamageText(targetBody.x, targetBody.y - 45, `獲得 ${itemNames[randomItem]}`, sparkColor, true));
+                });
                 
-                // Keep item reel rolling rapidly
-                if (game.drawTimer - game.drawLastTickTime >= 0.08) {
-                    game.drawLastTickTime = game.drawTimer;
-                    sounds.playLotteryTick();
-                    if (itemReel) {
-                        const items = ['heal', 'invincible', 'spike', 'missile'];
-                        const randItem = items[Math.floor(Math.random() * items.length)];
-                        itemReel.innerHTML = `<div class="reel-item" style="color: ${itemColors[randItem]}; text-shadow: 0 0 8px ${itemColors[randItem]}">${itemMap[randItem]}</div>`;
-                    }
-                }
+                sounds.playLotteryWin();
             }
             
-            // 3. Lock item at 1.8s
-            if (game.drawTimer >= 1.8 && game.drawTimer < 2.0) {
-                if (itemReel && !itemReel.querySelector('.reel-item').classList.contains('locked')) {
-                    sounds.playCollectItem(game.drawItem); // play item-specific select sound
-                    itemReel.innerHTML = `<div class="reel-item locked" style="color: ${itemColors[game.drawItem]}; text-shadow: 0 0 12px ${itemColors[game.drawItem]}">${itemMap[game.drawItem]}</div>`;
-                    if (statusText) statusText.innerText = `獲得：${itemMap[game.drawItem]}`;
-                }
-            }
-            
-            // 4. Trigger Jackpot win effects at 2.0s
-            if (game.drawTimer >= 2.0 && game.drawTimer < 3.2) {
-                // If we haven't given the item yet, do it now
-                if (game.drawWinnerId !== null) {
-                    const targetBody = game.activeBeyblades.find(b => b.player.id === game.drawWinnerId);
-                    if (targetBody && targetBody.state === 'spinning') {
-                        targetBody.player.item = game.drawItem;
-                        
-                        let sparkColor = itemColors[game.drawItem];
-                        createSparks(targetBody.x, targetBody.y, sparkColor, 18, 1.3);
-                        game.particles.push(new Shockwave(targetBody.x, targetBody.y, targetBody.radius * 3.0, sparkColor));
-                    }
-                    
-                    sounds.playLotteryWin();
-                    
-                    if (statusText) {
-                        statusText.innerText = `恭喜 ${game.drawWinnerName} 獲得 ${itemMap[game.drawItem]}!`;
-                        statusText.className = 'lottery-status success';
-                    }
-                    
-                    // Mark as given
-                    game.drawWinnerId = null;
-                }
-            }
-            
-            // 5. Hide lottery overlay at 3.2s
-            if (game.drawTimer >= 3.2) {
-                const overlay = document.getElementById('lottery-overlay');
-                if (overlay) overlay.classList.add('hidden');
-                
-                game.isDrawingItem = false;
-                game.itemDistributeTimer = 20.0;
-            }
+            // Reset countdown timer
+            game.itemDistributeTimer = 15.0;
         }
 
         // 3. Update active missiles
