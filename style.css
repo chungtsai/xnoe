@@ -510,6 +510,17 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     font-weight: 700;
 }
 
+.player-team-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.8;
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #cbd5e0;
+}
+
 .panel-body {
     padding: 16px;
     flex-grow: 1;

@@ -41,6 +41,15 @@
                                     <option value="none">停用</option>
                                 </select>
                             </div>
+                            <div class="control-group">
+                                <label>隊伍分組</label>
+                                <select class="player-group-select player-type-select" id="p1-group">
+                                    <option value="1" selected>隊伍 1</option>
+                                    <option value="2">隊伍 2</option>
+                                    <option value="3">隊伍 3</option>
+                                    <option value="4">隊伍 4</option>
+                                </select>
+                            </div>
                             <div class="control-group beyblade-select-group">
                                 <label>陀螺類型</label>
                                 <div class="beyblade-type-selectors">
@@ -73,6 +82,15 @@
                                     <option value="none">停用</option>
                                 </select>
                             </div>
+                            <div class="control-group">
+                                <label>隊伍分組</label>
+                                <select class="player-group-select player-type-select" id="p2-group">
+                                    <option value="1">隊伍 1</option>
+                                    <option value="2" selected>隊伍 2</option>
+                                    <option value="3">隊伍 3</option>
+                                    <option value="4">隊伍 4</option>
+                                </select>
+                            </div>
                             <div class="control-group beyblade-select-group">
                                 <label>陀螺類型</label>
                                 <div class="beyblade-type-selectors">
@@ -101,8 +119,17 @@
                                 <label>玩家類型</label>
                                 <select class="player-type-select" id="p3-type">
                                     <option value="human">玩家 3 (Z:集氣/道具, C:防禦, X:巨化)</option>
-                                    <option value="ai">AI 機器人</option>
-                                    <option value="none" selected>停用</option>
+                                    <option value="ai" selected>AI 機器人</option>
+                                    <option value="none">停用</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label>隊伍分組</label>
+                                <select class="player-group-select player-type-select" id="p3-group">
+                                    <option value="1">隊伍 1</option>
+                                    <option value="2">隊伍 2</option>
+                                    <option value="3" selected>隊伍 3</option>
+                                    <option value="4">隊伍 4</option>
                                 </select>
                             </div>
                             <div class="control-group beyblade-select-group">
@@ -133,8 +160,17 @@
                                 <label>玩家類型</label>
                                 <select class="player-type-select" id="p4-type">
                                     <option value="human">玩家 4 (M:集氣/道具, B:防禦, N:巨化)</option>
-                                    <option value="ai">AI 機器人</option>
-                                    <option value="none" selected>停用</option>
+                                    <option value="ai" selected>AI 機器人</option>
+                                    <option value="none">停用</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label>隊伍分組</label>
+                                <select class="player-group-select player-type-select" id="p4-group">
+                                    <option value="1">隊伍 1</option>
+                                    <option value="2">隊伍 2</option>
+                                    <option value="3">隊伍 3</option>
+                                    <option value="4" selected>隊伍 4</option>
                                 </select>
                             </div>
                             <div class="control-group beyblade-select-group">
@@ -250,7 +286,7 @@
                 <div class="player-panel top-left p1-theme" id="panel-p1">
                     <div class="panel-header">
                         <span class="player-badge">P1</span>
-                        <span class="player-name">藍色星擊</span>
+                        <span class="player-name">藍色星擊 <span class="player-team-label" id="p1-team-label">(隊伍 1)</span></span>
                         <div class="round-scores" id="p1-round-scores">
                             <span class="score-dot" id="p1-dot-1"></span>
                             <span class="score-dot" id="p1-dot-2"></span>
@@ -299,7 +335,7 @@
                 <div class="player-panel top-right p2-theme" id="panel-p2">
                     <div class="panel-header">
                         <span class="player-badge">P2</span>
-                        <span class="player-name">紅色暴風</span>
+                        <span class="player-name">紅色暴風 <span class="player-team-label" id="p2-team-label">(隊伍 2)</span></span>
                         <div class="round-scores" id="p2-round-scores">
                             <span class="score-dot" id="p2-dot-1"></span>
                             <span class="score-dot" id="p2-dot-2"></span>
@@ -388,7 +424,7 @@
                 <div class="player-panel bottom-left p3-theme" id="panel-p3">
                     <div class="panel-header">
                         <span class="player-badge">P3</span>
-                        <span class="player-name">綠色裂空</span>
+                        <span class="player-name">綠色裂空 <span class="player-team-label" id="p3-team-label">(隊伍 3)</span></span>
                         <div class="round-scores" id="p3-round-scores">
                             <span class="score-dot" id="p3-dot-1"></span>
                             <span class="score-dot" id="p3-dot-2"></span>
@@ -437,7 +473,7 @@
                 <div class="player-panel bottom-right p4-theme" id="panel-p4">
                     <div class="panel-header">
                         <span class="player-badge">P4</span>
-                        <span class="player-name">黃色雷光</span>
+                        <span class="player-name">黃色雷光 <span class="player-team-label" id="p4-team-label">(隊伍 4)</span></span>
                         <div class="round-scores" id="p4-round-scores">
                             <span class="score-dot" id="p4-dot-1"></span>
                             <span class="score-dot" id="p4-dot-2"></span>

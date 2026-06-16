@@ -1087,10 +1087,10 @@ const game = {
     battleTimer: 99.0,
     gameMode: 'item',   // normal, item
     players: [
-        { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', giantKey: 'e', giantKeyLabel: 'E', defendKey: 'w', defendKeyLabel: 'W', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
-        { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', giantKey: 'o', giantKeyLabel: 'O', defendKey: 'i', defendKeyLabel: 'I', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
-        { id: 3, name: '綠色裂空', type: 'none', beybladeType: 'stamina', color: '#00ff66', glowColor: 'rgba(0, 255, 102, 0.4)', key: 'z', keyLabel: 'Z', giantKey: 'x', giantKeyLabel: 'X', defendKey: 'c', defendKeyLabel: 'C', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false },
-        { id: 4, name: '黃色雷光', type: 'none', beybladeType: 'balance', color: '#ffcc00', glowColor: 'rgba(255, 204, 0, 0.4)', key: 'm', keyLabel: 'M', giantKey: 'n', giantKeyLabel: 'N', defendKey: 'b', defendKeyLabel: 'B', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false }
+        { id: 1, name: '藍色星擊', type: 'human', beybladeType: 'attack', color: '#00f0ff', glowColor: 'rgba(0, 240, 255, 0.4)', key: 'q', keyLabel: 'Q', giantKey: 'e', giantKeyLabel: 'E', defendKey: 'w', defendKeyLabel: 'W', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false, team: 1 },
+        { id: 2, name: '紅色暴風', type: 'ai', beybladeType: 'attack', color: '#ff0055', glowColor: 'rgba(255, 0, 85, 0.4)', key: 'p', keyLabel: 'P', giantKey: 'o', giantKeyLabel: 'O', defendKey: 'i', defendKeyLabel: 'I', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false, team: 2 },
+        { id: 3, name: '綠色裂空', type: 'ai', beybladeType: 'stamina', color: '#00ff66', glowColor: 'rgba(0, 255, 102, 0.4)', key: 'z', keyLabel: 'Z', giantKey: 'x', giantKeyLabel: 'X', defendKey: 'c', defendKeyLabel: 'C', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false, team: 3 },
+        { id: 4, name: '黃色雷光', type: 'ai', beybladeType: 'balance', color: '#ffcc00', glowColor: 'rgba(255, 204, 0, 0.4)', key: 'm', keyLabel: 'M', giantKey: 'n', giantKeyLabel: 'N', defendKey: 'b', defendKeyLabel: 'B', chargeVal: 0, chargeDir: 1, locked: false, power: 0, isCritical: false, eliminationRank: 0, survivalTime: 0, hits: 0, matchWins: 0, item: null, giantSkillAvailable: false, team: 4 }
     ],
     stadiumType: 'standard', // standard, hazard, vortex
     countdownVal: 3,
@@ -1613,6 +1613,15 @@ function setupUIListeners() {
             updateConfigView();
         });
 
+        // Player Group/Team Switch
+        const groupSelect = card.querySelector('.player-group-select');
+        if (groupSelect) {
+            game.players[playerIdx].team = parseInt(groupSelect.value);
+            groupSelect.addEventListener('change', (e) => {
+                game.players[playerIdx].team = parseInt(e.target.value);
+            });
+        }
+
         // Beyblade Style Selection
         styleBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1935,11 +1944,17 @@ function transitionToPrepare() {
     if (scoreboard) scoreboard.classList.remove('scoreboard-hidden');
     updateScoreboardHeader();
 
-    // Reset UI Panel displays
+        // Reset UI Panel displays
     game.players.forEach(p => {
         const panel = document.getElementById(`panel-p${p.id}`);
         panel.classList.remove('panel-disabled', 'active-glow-p1', 'active-glow-p2', 'active-glow-p3', 'active-glow-p4', 'player-type-human', 'player-type-ai', 'player-type-none');
         panel.classList.add(`player-type-${p.type}`);
+
+        // Update team label dynamically
+        const teamLabel = document.getElementById(`p${p.id}-team-label`);
+        if (teamLabel) {
+            teamLabel.innerText = `(隊伍 ${p.team})`;
+        }
         
         const chargeControls = panel.querySelector('.charge-controls');
         const battleHud = panel.querySelector('.battle-hud');
@@ -2217,9 +2232,10 @@ function triggerExplosion(x, y, excludePlayerId = null) {
     game.shakeIntensity = Math.min(game.shakeIntensity + 15, 25);
     
     // Impact on spinning beyblades
+    const excludePlayer = excludePlayerId !== null ? game.players.find(p => p.id === excludePlayerId) : null;
     game.activeBeyblades.forEach(b => {
         if (b.state !== 'spinning') return;
-        if (excludePlayerId !== null && b.player.id === excludePlayerId) return; // Do not damage the sender
+        if (excludePlayer && excludePlayer.team === b.player.team) return; // Do not damage teammates (and sender)
         
         const dist = Math.hypot(b.x - x, b.y - y);
         const explosionRadius = 90;
@@ -2963,31 +2979,63 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
             b2.defenseBlockedAttack = true;
         }
 
-        const p1Drain = spinImpactLoss * b2AtkForce * 0.5;
-        const p2Drain = spinImpactLoss * b1AtkForce * 0.5;
-        
-        if (!(b1.invincibleTimer > 0 || b1.giantTimer > 0)) {
-            let actualP1Drain = p1Drain;
-            if (b1.defenseDebuffTimer > 0) {
-                actualP1Drain *= 2.0;
+        const isSameTeam = b1.player.team === b2.player.team;
+
+        if (!isSameTeam) {
+            const p1Drain = spinImpactLoss * b2AtkForce * 0.5;
+            const p2Drain = spinImpactLoss * b1AtkForce * 0.5;
+            
+            if (!(b1.invincibleTimer > 0 || b1.giantTimer > 0)) {
+                let actualP1Drain = p1Drain;
+                if (b1.defenseDebuffTimer > 0) {
+                    actualP1Drain *= 2.0;
+                }
+                b1.spin -= actualP1Drain;
+                if (actualP1Drain > 0.05) {
+                    const isCrit = (b2.player.isCritical || b2.atkBoostTimer > 0 || b2.flameModeTimer > 0 || b1.defenseDebuffTimer > 0);
+                    const color = b1.defenseDebuffTimer > 0 ? '#ff5500' : (isCrit ? '#ff4500' : '#ff3355');
+                    game.particles.push(new DamageText(b1.x, b1.y, actualP1Drain, color, isCrit));
+                }
             }
-            b1.spin -= actualP1Drain;
-            if (actualP1Drain > 0.05) {
-                const isCrit = (b2.player.isCritical || b2.atkBoostTimer > 0 || b2.flameModeTimer > 0 || b1.defenseDebuffTimer > 0);
-                const color = b1.defenseDebuffTimer > 0 ? '#ff5500' : (isCrit ? '#ff4500' : '#ff3355');
-                game.particles.push(new DamageText(b1.x, b1.y, actualP1Drain, color, isCrit));
+            if (!(b2.invincibleTimer > 0 || b2.giantTimer > 0)) {
+                let actualP2Drain = p2Drain;
+                if (b2.defenseDebuffTimer > 0) {
+                    actualP2Drain *= 2.0;
+                }
+                b2.spin -= actualP2Drain;
+                if (actualP2Drain > 0.05) {
+                    const isCrit = (b1.player.isCritical || b1.atkBoostTimer > 0 || b1.flameModeTimer > 0 || b2.defenseDebuffTimer > 0);
+                    const color = b2.defenseDebuffTimer > 0 ? '#ff5500' : (isCrit ? '#ff4500' : '#ff3355');
+                    game.particles.push(new DamageText(b2.x, b2.y, actualP2Drain, color, isCrit));
+                }
             }
-        }
-        if (!(b2.invincibleTimer > 0 || b2.giantTimer > 0)) {
-            let actualP2Drain = p2Drain;
-            if (b2.defenseDebuffTimer > 0) {
-                actualP2Drain *= 2.0;
+
+            // Flash and impact stats
+            b1.damageFlash = 6;
+            b2.damageFlash = 6;
+            b1.player.hits++;
+            b2.player.hits++;
+
+            // Increment flame collision accumulation
+            if (b1.flameModeTimer <= 0) {
+                b1.flameCollisionCount++;
+                if (b1.flameCollisionCount >= 10) {
+                    b1.flameModeTimer = 5.0;
+                    b1.flameCollisionCount = 0;
+                    sounds.playFlameMode();
+                    createSparks(b1.x, b1.y, '#ff4500', 25, 1.6);
+                    game.particles.push(new Shockwave(b1.x, b1.y, b1.radius * 2, '#ff4500'));
+                }
             }
-            b2.spin -= actualP2Drain;
-            if (actualP2Drain > 0.05) {
-                const isCrit = (b1.player.isCritical || b1.atkBoostTimer > 0 || b1.flameModeTimer > 0 || b2.defenseDebuffTimer > 0);
-                const color = b2.defenseDebuffTimer > 0 ? '#ff5500' : (isCrit ? '#ff4500' : '#ff3355');
-                game.particles.push(new DamageText(b2.x, b2.y, actualP2Drain, color, isCrit));
+            if (b2.flameModeTimer <= 0) {
+                b2.flameCollisionCount++;
+                if (b2.flameCollisionCount >= 10) {
+                    b2.flameModeTimer = 5.0;
+                    b2.flameCollisionCount = 0;
+                    sounds.playFlameMode();
+                    createSparks(b2.x, b2.y, '#ff4500', 25, 1.6);
+                    game.particles.push(new Shockwave(b2.x, b2.y, b2.radius * 2, '#ff4500'));
+                }
             }
         }
 
@@ -2997,34 +3045,6 @@ function resolveBeybladeCollision(b1, b2, dx, dy, dist, minDist) {
         b1.vy -= ty * kickScalar * (1 / b1.mass);
         b2.vx += tx * kickScalar * (1 / b2.mass);
         b2.vy += ty * kickScalar * (1 / b2.mass);
-
-        // Flash and impact stats
-        b1.damageFlash = 6;
-        b2.damageFlash = 6;
-        b1.player.hits++;
-        b2.player.hits++;
-
-        // Increment flame collision accumulation
-        if (b1.flameModeTimer <= 0) {
-            b1.flameCollisionCount++;
-            if (b1.flameCollisionCount >= 10) {
-                b1.flameModeTimer = 5.0;
-                b1.flameCollisionCount = 0;
-                sounds.playFlameMode();
-                createSparks(b1.x, b1.y, '#ff4500', 25, 1.6);
-                game.particles.push(new Shockwave(b1.x, b1.y, b1.radius * 2, '#ff4500'));
-            }
-        }
-        if (b2.flameModeTimer <= 0) {
-            b2.flameCollisionCount++;
-            if (b2.flameCollisionCount >= 10) {
-                b2.flameModeTimer = 5.0;
-                b2.flameCollisionCount = 0;
-                sounds.playFlameMode();
-                createSparks(b2.x, b2.y, '#ff4500', 25, 1.6);
-                game.particles.push(new Shockwave(b2.x, b2.y, b2.radius * 2, '#ff4500'));
-            }
-        }
 
         // Sound intensity depends on impulse size
         const collisionIntensity = Math.abs(impulseScalar);
