@@ -1168,6 +1168,7 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+    white-space: pre-line;
 }
 
 .winner-subtext {
@@ -1842,6 +1843,27 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
     animation: btnPulseMissile 1.2s infinite alternate ease-in-out !important;
 }
 
+.btn-charge-circle.has-item-vortex {
+    border-color: #9d4edd !important;
+    box-shadow: inset 0 2px 4px rgba(157, 78, 221, 0.2), 0 0 15px rgba(157, 78, 221, 0.6) !important;
+    background: rgba(30, 0, 45, 0.85) !important;
+    animation: btnPulseVortex 1.2s infinite alternate ease-in-out !important;
+}
+
+.btn-charge-circle.has-item-freeze {
+    border-color: #00e5ff !important;
+    box-shadow: inset 0 2px 4px rgba(0, 229, 255, 0.2), 0 0 15px rgba(0, 229, 255, 0.6) !important;
+    background: rgba(0, 45, 60, 0.85) !important;
+    animation: btnPulseFreeze 1.2s infinite alternate ease-in-out !important;
+}
+
+.btn-charge-circle.has-item-confuse {
+    border-color: #ffd166 !important;
+    box-shadow: inset 0 2px 4px rgba(255, 209, 102, 0.2), 0 0 15px rgba(255, 209, 102, 0.6) !important;
+    background: rgba(45, 35, 0, 0.85) !important;
+    animation: btnPulseConfuse 1.2s infinite alternate ease-in-out !important;
+}
+
 @keyframes btnPulseHeal {
     0% { box-shadow: inset 0 2px 4px rgba(0, 255, 102, 0.2), 0 0 10px rgba(0, 255, 102, 0.4); }
     100% { box-shadow: inset 0 2px 4px rgba(0, 255, 102, 0.3), 0 0 20px rgba(0, 255, 102, 0.8); }
@@ -1860,6 +1882,21 @@ h1, h2, h3, h4, .logo-text, .sub-logo-text, .key-indicator {
 @keyframes btnPulseMissile {
     0% { box-shadow: inset 0 2px 4px rgba(223, 0, 255, 0.2), 0 0 10px rgba(223, 0, 255, 0.4); }
     100% { box-shadow: inset 0 2px 4px rgba(223, 0, 255, 0.3), 0 0 20px rgba(223, 0, 255, 0.8); }
+}
+
+@keyframes btnPulseVortex {
+    0% { box-shadow: inset 0 2px 4px rgba(157, 78, 221, 0.2), 0 0 10px rgba(157, 78, 221, 0.4); }
+    100% { box-shadow: inset 0 2px 4px rgba(157, 78, 221, 0.3), 0 0 20px rgba(157, 78, 221, 0.8); }
+}
+
+@keyframes btnPulseFreeze {
+    0% { box-shadow: inset 0 2px 4px rgba(0, 229, 255, 0.2), 0 0 10px rgba(0, 229, 255, 0.4); }
+    100% { box-shadow: inset 0 2px 4px rgba(0, 229, 255, 0.3), 0 0 20px rgba(0, 229, 255, 0.8); }
+}
+
+@keyframes btnPulseConfuse {
+    0% { box-shadow: inset 0 2px 4px rgba(255, 209, 102, 0.2), 0 0 10px rgba(255, 209, 102, 0.4); }
+    100% { box-shadow: inset 0 2px 4px rgba(255, 209, 102, 0.3), 0 0 20px rgba(255, 209, 102, 0.8); }
 }
 
 .item-rule-highlight {

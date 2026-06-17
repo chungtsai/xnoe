@@ -783,6 +783,30 @@ class SoundManager {
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
             osc.start(now);
             osc.stop(now + 0.3);
+        } else if (type === 'vortex') {
+            osc.frequency.setValueAtTime(440.00, now); // A4
+            osc.frequency.setValueAtTime(523.25, now + 0.08); // C5
+            osc.frequency.setValueAtTime(587.33, now + 0.16); // D5
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'freeze') {
+            osc.frequency.setValueAtTime(783.99, now); // G5
+            osc.frequency.setValueAtTime(987.77, now + 0.08); // B5
+            osc.frequency.setValueAtTime(1174.66, now + 0.16); // D6
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        } else if (type === 'confuse') {
+            osc.frequency.setValueAtTime(493.88, now); // B4
+            osc.frequency.setValueAtTime(440.00, now + 0.08); // A4
+            osc.frequency.setValueAtTime(392.00, now + 0.16); // G4
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
         } else {
             osc.frequency.setValueAtTime(440, now); // A4
             osc.frequency.setValueAtTime(554.37, now + 0.08); // C#5
@@ -871,6 +895,31 @@ class SoundManager {
             gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
             osc.start(now);
             osc.stop(now + 0.45);
+        } else if (type === 'vortex') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.6);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            osc.start(now);
+            osc.stop(now + 0.6);
+        } else if (type === 'freeze') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.45);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+            osc.start(now);
+            osc.stop(now + 0.45);
+        } else if (type === 'confuse') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(350, now);
+            osc.frequency.linearRampToValueAtTime(200, now + 0.2);
+            osc.frequency.linearRampToValueAtTime(500, now + 0.4);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.start(now);
+            osc.stop(now + 0.4);
         } else {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(220, now);
@@ -1105,8 +1154,49 @@ const game = {
     items: [], // Items spawned on stadium floor
     itemSpawnTimer: 3.0, // Spawns items periodically
     itemDistributeTimer: 15.0, // Every 15s randomly sends items to all players
-    missiles: [] // Active missiles in the air/targeting
+    missiles: [], // Active missiles in the air/targeting
+    teamWins: {} // Track wins per team in team mode (keyed by team number)
 };
+
+// --- TEAM MODE HELPERS ---
+function isTeamMode() {
+    // Team mode is active when at least two active players share the same team number
+    const activePlayers = game.players.filter(p => p.type !== 'none');
+    const teamCounts = {};
+    for (const p of activePlayers) {
+        teamCounts[p.team] = (teamCounts[p.team] || 0) + 1;
+    }
+    // If any team has more than one member, it's team mode
+    return Object.values(teamCounts).some(count => count > 1);
+}
+
+function getTeamName(teamId) {
+    return `隊伍 ${teamId}`;
+}
+
+function getActiveTeams() {
+    // Returns an array of unique team IDs for active (non-none) players
+    const activePlayers = game.players.filter(p => p.type !== 'none');
+    return [...new Set(activePlayers.map(p => p.team))];
+}
+
+function getTeamColor(teamId) {
+    // Get a representative color for the team (first member's color)
+    const member = game.players.find(p => p.type !== 'none' && p.team === teamId);
+    return member ? member.color : '#ffffff';
+}
+
+function getTeamMemberNames(teamId) {
+    return game.players
+        .filter(p => p.type !== 'none' && p.team === teamId)
+        .map(p => p.name);
+}
+
+function resetTeamWins() {
+    game.teamWins = {};
+    const teams = getActiveTeams();
+    teams.forEach(t => { game.teamWins[t] = 0; });
+}
 
 // --- PHYSICS CLASS REPRESENTATION ---
 class BeybladePhysics {
@@ -1156,10 +1246,42 @@ class BeybladePhysics {
         this.giantCooldown = 0; // Giant cooldown in seconds
         this.flameCollisionCount = 0; // Hits accumulated for flame mode
         this.flameModeTimer = 0; // Flame mode active timer in seconds
+        this.freezeTimer = 0;
+        this.confuseTimer = 0;
     }
 
     update(dt, stadiumType, hazardZones) {
         if (this.state !== 'spinning') return;
+        
+        // Update freeze timer
+        if (this.freezeTimer > 0) {
+            this.freezeTimer -= dt * (16.666 / 1000);
+            if (this.freezeTimer < 0) this.freezeTimer = 0;
+            
+            // Generate ice steam particles
+            if (Math.random() < 0.25) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = Math.random() * this.radius;
+                const px = this.x + Math.cos(angle) * r;
+                const py = this.y + Math.sin(angle) * r;
+                game.particles.push(new FlameParticle(px, py, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3, '#00e5ff', 3 + Math.random() * 3, 10 + Math.random() * 10));
+            }
+        }
+        
+        // Update confuse timer
+        if (this.confuseTimer > 0) {
+            this.confuseTimer -= dt * (16.666 / 1000);
+            if (this.confuseTimer < 0) this.confuseTimer = 0;
+            
+            // Random chaotic impulses
+            if (Math.random() < 0.12 && this.freezeTimer <= 0) {
+                const confuseForce = 1.5 + Math.random() * 2.0;
+                const confuseAngle = Math.random() * Math.PI * 2;
+                this.vx += Math.cos(confuseAngle) * confuseForce;
+                this.vy += Math.sin(confuseAngle) * confuseForce;
+                createSparks(this.x, this.y, '#ffd166', 3, 0.8);
+            }
+        }
         
         // Update invincibility timer
         if (this.invincibleTimer > 0) {
@@ -1266,84 +1388,92 @@ class BeybladePhysics {
             }
         }
         
-        // 1. Air Friction & Deceleration
-        this.vx *= 0.985;
-        this.vy *= 0.985;
-        
-        // 2. Arena Slope Effect: Gravitational pull towards center
-        const dx = CENTER_X - this.x;
-        const dy = CENTER_Y - this.y;
-        const distToCenter = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distToCenter > 1) {
-            // Central slope pull
-            const slopeAcceleration = 0.00028 * distToCenter; // stronger towards outer
-            this.vx += (dx / distToCenter) * slopeAcceleration;
-            this.vy += (dy / distToCenter) * slopeAcceleration;
-        }
+        // 1. Air Friction & Deceleration (skipped if frozen)
+        if (this.freezeTimer > 0) {
+            this.vx = 0;
+            this.vy = 0;
+        } else {
+            this.vx *= 0.985;
+            this.vy *= 0.985;
+            
+            // 2. Arena Slope Effect: Gravitational pull towards center
+            const dx = CENTER_X - this.x;
+            const dy = CENTER_Y - this.y;
+            const distToCenter = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distToCenter > 1) {
+                // Central slope pull
+                const slopeAcceleration = 0.00028 * distToCenter; // stronger towards outer
+                this.vx += (dx / distToCenter) * slopeAcceleration;
+                this.vy += (dy / distToCenter) * slopeAcceleration;
+            }
 
-        // 3. Special Stadium Hazards
-        if (stadiumType === 'vortex') {
-            // Draw into the center faster, accelerate linear speed but increase spin loss
-            const vortexPull = 0.04;
-            this.vx += (dx / distToCenter) * vortexPull;
-            this.vy += (dy / distToCenter) * vortexPull;
-            // Add a tangential swirl force
-            const tx = -dy / distToCenter;
-            const ty = dx / distToCenter;
-            this.vx += tx * 0.08;
-            this.vy += ty * 0.08;
-        } else if (stadiumType === 'hazard' || stadiumType === 'shadow') {
-            // Check collisions with moving shock hazard zones or shadow beyblades
-            hazardZones.forEach(zone => {
-                const hzDx = this.x - zone.x;
-                const hzDy = this.y - zone.y;
-                const hzDist = Math.sqrt(hzDx * hzDx + hzDy * hzDy);
-                if (hzDist < zone.radius + this.radius) {
-                    if (this.defenseActiveTimer > 0) {
-                        this.defenseBlockedAttack = true;
-                    }
-                    // Reduce spin rapidly and push away (skip if invincible or giant)
-                    if (!(this.invincibleTimer > 0 || this.giantTimer > 0)) {
-                        let hazardLoss = 0.35;
-                        if (this.defenseDebuffTimer > 0) {
-                            hazardLoss *= 2.0;
+            // 3. Special Stadium Hazards
+            if (stadiumType === 'vortex') {
+                // Draw into the center faster, accelerate linear speed but increase spin loss
+                const vortexPull = 0.04;
+                this.vx += (dx / distToCenter) * vortexPull;
+                this.vy += (dy / distToCenter) * vortexPull;
+                // Add a tangential swirl force
+                const tx = -dy / distToCenter;
+                const ty = dx / distToCenter;
+                this.vx += tx * 0.08;
+                this.vy += ty * 0.08;
+            } else if (stadiumType === 'hazard' || stadiumType === 'shadow') {
+                // Check collisions with moving shock hazard zones or shadow beyblades
+                hazardZones.forEach(zone => {
+                    const hzDx = this.x - zone.x;
+                    const hzDy = this.y - zone.y;
+                    const hzDist = Math.sqrt(hzDx * hzDx + hzDy * hzDy);
+                    if (hzDist < zone.radius + this.radius) {
+                        if (this.defenseActiveTimer > 0) {
+                            this.defenseBlockedAttack = true;
                         }
-                        this.spin -= hazardLoss;
-                        if (this.hazardDamageCooldown <= 0) {
-                            game.particles.push(new DamageText(this.x, this.y, hazardLoss, stadiumType === 'shadow' ? '#9400d3' : '#00e5ff'));
-                            this.hazardDamageCooldown = 0.25;
+                        // Reduce spin rapidly and push away (skip if invincible or giant)
+                        if (!(this.invincibleTimer > 0 || this.giantTimer > 0)) {
+                            let hazardLoss = 0.35;
+                            if (this.defenseDebuffTimer > 0) {
+                                hazardLoss *= 2.0;
+                            }
+                            this.spin -= hazardLoss;
+                            if (this.hazardDamageCooldown <= 0) {
+                                game.particles.push(new DamageText(this.x, this.y, hazardLoss, stadiumType === 'shadow' ? '#9400d3' : '#00e5ff'));
+                                this.hazardDamageCooldown = 0.25;
+                            }
+                        }
+                        // Mutual bounce-back physics
+                        const pushForce = stadiumType === 'shadow' ? 0.45 : 0.4;
+                        this.vx += (hzDx / hzDist) * pushForce;
+                        this.vy += (hzDy / hzDist) * pushForce;
+                        
+                        if (stadiumType === 'shadow') {
+                            // Push the shadow beyblade back
+                            zone.vx -= (hzDx / hzDist) * 0.35;
+                            zone.vy -= (hzDy / hzDist) * 0.35;
+                        }
+                        
+                        this.damageFlash = 5;
+                        
+                        // Create electric sparks / dark shadow particles
+                        if (Math.random() < 0.4) {
+                            createSparks(this.x, this.y, stadiumType === 'shadow' ? '#9400d3' : '#ffffff', 4);
                         }
                     }
-                    // Mutual bounce-back physics
-                    const pushForce = stadiumType === 'shadow' ? 0.45 : 0.4;
-                    this.vx += (hzDx / hzDist) * pushForce;
-                    this.vy += (hzDy / hzDist) * pushForce;
-                    
-                    if (stadiumType === 'shadow') {
-                        // Push the shadow beyblade back
-                        zone.vx -= (hzDx / hzDist) * 0.35;
-                        zone.vy -= (hzDy / hzDist) * 0.35;
-                    }
-                    
-                    this.damageFlash = 5;
-                    
-                    // Create electric sparks / dark shadow particles
-                    if (Math.random() < 0.4) {
-                        createSparks(this.x, this.y, stadiumType === 'shadow' ? '#9400d3' : '#ffffff', 4);
-                    }
-                }
-            });
-        }
+                });
+            }
 
-        // Apply velocities
-        this.x += this.vx;
-        this.y += this.vy;
+            // Apply velocities
+            this.x += this.vx;
+            this.y += this.vy;
+        }
 
         // 4. Spin Friction (Loss over time)
         // Friction reduces spin depending on speed & type
         const speedFactor = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-        const spinLoss = this.style.friction * (1.0 + speedFactor * 0.08);
+        let spinLoss = this.style.friction * (1.0 + speedFactor * 0.08);
+        if (this.freezeTimer > 0) {
+            spinLoss *= 3.0; // Tripled decay when frozen in ice
+        }
         this.spin -= spinLoss;
         
         // Spin direction rotation
@@ -1668,6 +1798,27 @@ function setupUIListeners() {
         });
     }
 
+    // Helper to trigger player actions in battle, handling confusion mapping scramble
+    function triggerPlayerAction(playerId, actionType) {
+        if (game.state !== STATE_BATTLE) return;
+        const b = game.activeBeyblades.find(x => x.player.id === playerId);
+        let finalAction = actionType;
+        if (b && b.state === 'spinning' && b.confuseTimer > 0) {
+            // Confused! Swap keys: item -> giant -> defend -> item
+            if (actionType === 'item') finalAction = 'giant';
+            else if (actionType === 'giant') finalAction = 'defend';
+            else if (actionType === 'defend') finalAction = 'item';
+        }
+        
+        if (finalAction === 'item') {
+            usePlayerItem(playerId);
+        } else if (finalAction === 'giant') {
+            usePlayerGiantSkill(playerId);
+        } else if (finalAction === 'defend') {
+            usePlayerDefense(playerId);
+        }
+    }
+
     // Launch and Giant buttons
     for (let i = 1; i <= 4; i++) {
         const btn = document.getElementById(`btn-charge-p${i}`);
@@ -1678,7 +1829,7 @@ function setupUIListeners() {
                 if (game.state === STATE_PREPARE) {
                     lockPlayerPower(i);
                 } else if (game.state === STATE_BATTLE) {
-                    usePlayerItem(i);
+                    triggerPlayerAction(i, 'item');
                 }
             });
         }
@@ -1688,7 +1839,7 @@ function setupUIListeners() {
             giantBtn.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
                 if (game.state === STATE_BATTLE) {
-                    usePlayerGiantSkill(i);
+                    triggerPlayerAction(i, 'giant');
                 }
             });
         }
@@ -1698,7 +1849,7 @@ function setupUIListeners() {
             defendBtn.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
                 if (game.state === STATE_BATTLE) {
-                    usePlayerDefense(i);
+                    triggerPlayerAction(i, 'defend');
                 }
             });
         }
@@ -1717,11 +1868,11 @@ function setupUIListeners() {
             game.players.forEach(p => {
                 if (p.type === 'human') {
                     if (p.key === key) {
-                        usePlayerItem(p.id);
+                        triggerPlayerAction(p.id, 'item');
                     } else if (p.giantKey === key) {
-                        usePlayerGiantSkill(p.id);
+                        triggerPlayerAction(p.id, 'giant');
                     } else if (p.defendKey === key) {
-                        usePlayerDefense(p.id);
+                        triggerPlayerAction(p.id, 'defend');
                     }
                 }
             });
@@ -1735,6 +1886,7 @@ function setupUIListeners() {
         sounds.init();
         game.currentRound = 1;
         game.players.forEach(p => p.matchWins = 0);
+        resetTeamWins();
         transitionToPrepare();
     });
 
@@ -1759,6 +1911,7 @@ function setupUIListeners() {
             cleanupBattlePhysics();
             game.currentRound = 1;
             game.players.forEach(p => p.matchWins = 0);
+            resetTeamWins();
             transitionToSetup();
         });
     }
@@ -1766,12 +1919,14 @@ function setupUIListeners() {
     btnRematch.addEventListener('click', () => {
         game.currentRound = 1;
         game.players.forEach(p => p.matchWins = 0);
+        resetTeamWins();
         transitionToPrepare();
     });
 
     btnMainMenu.addEventListener('click', () => {
         game.currentRound = 1;
         game.players.forEach(p => p.matchWins = 0);
+        resetTeamWins();
         transitionToSetup();
     });
 
@@ -1781,11 +1936,37 @@ function setupUIListeners() {
             // Hide modal overlay
             document.getElementById('round-modal').classList.add('hidden');
             
-            // Check if tournament is over (someone has 2 wins)
-            const tournamentWinner = game.players.find(p => p.type !== 'none' && p.matchWins >= 2);
-            if (tournamentWinner) {
-                const winnerBody = game.activeBeyblades.find(b => b.player.id === tournamentWinner.id);
-                transitionToVictory(winnerBody || { player: tournamentWinner });
+            // Check if tournament is over
+            let isTournamentOver = false;
+            let winnerTeamId = null;
+
+            if (isTeamMode()) {
+                // Team mode: check if any team has 2 wins
+                for (const [teamId, wins] of Object.entries(game.teamWins)) {
+                    if (wins >= 2) {
+                        isTournamentOver = true;
+                        winnerTeamId = parseInt(teamId);
+                        break;
+                    }
+                }
+            } else {
+                const tournamentWinner = game.players.find(p => p.type !== 'none' && p.matchWins >= 2);
+                if (tournamentWinner) {
+                    isTournamentOver = true;
+                }
+            }
+
+            if (isTournamentOver) {
+                if (isTeamMode() && winnerTeamId !== null) {
+                    // Pass team info to victory screen
+                    const representativePlayer = game.players.find(p => p.type !== 'none' && p.team === winnerTeamId);
+                    const winnerBody = game.activeBeyblades.find(b => b.player.team === winnerTeamId);
+                    transitionToVictory(winnerBody || { player: representativePlayer }, winnerTeamId);
+                } else {
+                    const tournamentWinner = game.players.find(p => p.type !== 'none' && p.matchWins >= 2);
+                    const winnerBody = game.activeBeyblades.find(b => b.player.id === tournamentWinner.id);
+                    transitionToVictory(winnerBody || { player: tournamentWinner }, null);
+                }
             } else {
                 game.currentRound++;
                 transitionToPrepare();
@@ -1872,12 +2053,22 @@ function transitionToSetup() {
 }
 
 function updateScoreboardHeader() {
-    // Update browser tab title with active player scores
-    const activeScoreString = game.players
-        .filter(p => p.type !== 'none')
-        .map(p => `P${p.id}: ${p.matchWins}勝`)
-        .join(' | ');
-    document.title = `第 ${game.currentRound} 局 (${activeScoreString}) - 戰鬥陀螺`;
+    const teamMode = isTeamMode();
+
+    // Update browser tab title with scores
+    if (teamMode) {
+        const teams = getActiveTeams();
+        const scoreString = teams
+            .map(t => `${getTeamName(t)}: ${game.teamWins[t] || 0}勝`)
+            .join(' | ');
+        document.title = `第 ${game.currentRound} 局 (${scoreString}) - 戰鬥陀螺`;
+    } else {
+        const activeScoreString = game.players
+            .filter(p => p.type !== 'none')
+            .map(p => `P${p.id}: ${p.matchWins}勝`)
+            .join(' | ');
+        document.title = `第 ${game.currentRound} 局 (${activeScoreString}) - 戰鬥陀螺`;
+    }
 
     // Update screen top header round label
     const roundLabel = document.getElementById('scoreboard-round-num');
@@ -1890,21 +2081,41 @@ function updateScoreboardHeader() {
     if (scoresList) {
         scoresList.innerHTML = ''; // clear previous
         
-        const activePlayers = game.players.filter(p => p.type !== 'none');
-        activePlayers.forEach((p, idx) => {
-            const scoreSpan = document.createElement('span');
-            scoreSpan.className = 'scoreboard-player-score';
-            scoreSpan.style.color = p.color;
-            scoreSpan.innerHTML = `P${p.id} <span style="color: #fff; font-weight: 900; margin-left: 4px;">${p.matchWins}</span>`;
-            scoresList.appendChild(scoreSpan);
-            
-            if (idx < activePlayers.length - 1) {
-                const divider = document.createElement('span');
-                divider.className = 'scoreboard-divider';
-                divider.innerText = '•';
-                scoresList.appendChild(divider);
-            }
-        });
+        if (teamMode) {
+            const teams = getActiveTeams();
+            teams.forEach((teamId, idx) => {
+                const teamColor = getTeamColor(teamId);
+                const wins = game.teamWins[teamId] || 0;
+                const scoreSpan = document.createElement('span');
+                scoreSpan.className = 'scoreboard-player-score';
+                scoreSpan.style.color = teamColor;
+                scoreSpan.innerHTML = `${getTeamName(teamId)} <span style="color: #fff; font-weight: 900; margin-left: 4px;">${wins}</span>`;
+                scoresList.appendChild(scoreSpan);
+                
+                if (idx < teams.length - 1) {
+                    const divider = document.createElement('span');
+                    divider.className = 'scoreboard-divider';
+                    divider.innerText = '•';
+                    scoresList.appendChild(divider);
+                }
+            });
+        } else {
+            const activePlayers = game.players.filter(p => p.type !== 'none');
+            activePlayers.forEach((p, idx) => {
+                const scoreSpan = document.createElement('span');
+                scoreSpan.className = 'scoreboard-player-score';
+                scoreSpan.style.color = p.color;
+                scoreSpan.innerHTML = `P${p.id} <span style="color: #fff; font-weight: 900; margin-left: 4px;">${p.matchWins}</span>`;
+                scoresList.appendChild(scoreSpan);
+                
+                if (idx < activePlayers.length - 1) {
+                    const divider = document.createElement('span');
+                    divider.className = 'scoreboard-divider';
+                    divider.innerText = '•';
+                    scoresList.appendChild(divider);
+                }
+            });
+        }
     }
 }
 
@@ -1933,6 +2144,7 @@ function transitionToPrepare() {
 
     if (game.currentRound === 1) {
         game.players.forEach(p => p.matchWins = 0);
+        resetTeamWins();
     }
 
     setupScreen.classList.remove('active');
@@ -3187,7 +3399,29 @@ function checkBattleEndCondition() {
         }
     });
 
-    if (spinningList.length <= 1) {
+    // Determine if round should end
+    let roundOver = false;
+    let winnerTeamId = null;
+
+    if (isTeamMode()) {
+        // Team mode: round ends when all remaining spinners belong to the same team
+        if (spinningList.length === 0) {
+            roundOver = true;
+        } else {
+            const remainingTeams = new Set(spinningList.map(b => b.player.team));
+            if (remainingTeams.size <= 1) {
+                roundOver = true;
+                winnerTeamId = [...remainingTeams][0]; // The sole surviving team
+            }
+        }
+    } else {
+        // FFA mode: round ends when 1 or fewer spinners remain
+        if (spinningList.length <= 1) {
+            roundOver = true;
+        }
+    }
+
+    if (roundOver) {
         // Stop physics update loop
         game.state = 'round_over';
         cancelAnimationFrame(game.animationFrameId);
@@ -3201,16 +3435,31 @@ function checkBattleEndCondition() {
 
         let winnerBody = null;
         let winnerPlayer = null;
-        if (spinningList.length === 1) {
-            winnerBody = spinningList[0];
-            winnerBody.player.eliminationRank = 1;
-            winnerBody.player.survivalTime = ((performance.now() - game.battleStartTime) / 1000).toFixed(2);
-            sounds.stopHum(winnerBody.player.id);
-            winnerPlayer = winnerBody.player;
+
+        if (isTeamMode()) {
+            // In team mode, mark surviving team members and stop their hums
+            if (winnerTeamId !== null) {
+                spinningList.forEach(b => {
+                    b.player.eliminationRank = 1;
+                    b.player.survivalTime = ((performance.now() - game.battleStartTime) / 1000).toFixed(2);
+                    sounds.stopHum(b.player.id);
+                });
+                // Use the first surviving team member as representative for display
+                winnerBody = spinningList[0];
+                winnerPlayer = winnerBody.player;
+            }
+        } else {
+            if (spinningList.length === 1) {
+                winnerBody = spinningList[0];
+                winnerBody.player.eliminationRank = 1;
+                winnerBody.player.survivalTime = ((performance.now() - game.battleStartTime) / 1000).toFixed(2);
+                sounds.stopHum(winnerBody.player.id);
+                winnerPlayer = winnerBody.player;
+            }
         }
 
         setTimeout(() => {
-            handleRoundEnd(winnerPlayer, winnerBody);
+            handleRoundEnd(winnerPlayer, winnerBody, winnerTeamId);
         }, 1000);
     }
 }
@@ -3237,63 +3486,146 @@ function handleBattleTimeout() {
     });
 
     if (spinningList.length > 0) {
-        // Sort by spin speed descending
-        spinningList.sort((a, b) => b.spin - a.spin);
-        const roundWinnerBody = spinningList[0];
-        roundWinnerBody.player.eliminationRank = 1;
-        
-        let rank = 2;
-        spinningList.slice(1).forEach(b => {
-            b.player.eliminationRank = rank++;
-        });
+        if (isTeamMode()) {
+            // Team mode: determine winner by team total spin
+            const teamSpins = {};
+            spinningList.forEach(b => {
+                const t = b.player.team;
+                teamSpins[t] = (teamSpins[t] || 0) + b.spin;
+            });
+            
+            // Find team with highest aggregate spin
+            let bestTeam = null;
+            let bestSpin = -1;
+            for (const [teamId, totalSpin] of Object.entries(teamSpins)) {
+                if (totalSpin > bestSpin) {
+                    bestSpin = totalSpin;
+                    bestTeam = parseInt(teamId);
+                }
+            }
 
-        // Trigger electric blast visual around center for time up
-        createBurst(CENTER_X, CENTER_Y, '#ffffff');
+            // Mark rankings
+            spinningList.forEach(b => {
+                b.player.eliminationRank = (b.player.team === bestTeam) ? 1 : 2;
+            });
 
-        setTimeout(() => {
-            handleRoundEnd(roundWinnerBody.player, roundWinnerBody);
-        }, 1000);
+            const roundWinnerBody = spinningList.find(b => b.player.team === bestTeam);
+
+            // Trigger electric blast visual around center for time up
+            createBurst(CENTER_X, CENTER_Y, '#ffffff');
+
+            setTimeout(() => {
+                handleRoundEnd(roundWinnerBody ? roundWinnerBody.player : null, roundWinnerBody, bestTeam);
+            }, 1000);
+        } else {
+            // FFA mode: Sort by spin speed descending
+            spinningList.sort((a, b) => b.spin - a.spin);
+            const roundWinnerBody = spinningList[0];
+            roundWinnerBody.player.eliminationRank = 1;
+            
+            let rank = 2;
+            spinningList.slice(1).forEach(b => {
+                b.player.eliminationRank = rank++;
+            });
+
+            // Trigger electric blast visual around center for time up
+            createBurst(CENTER_X, CENTER_Y, '#ffffff');
+
+            setTimeout(() => {
+                handleRoundEnd(roundWinnerBody.player, roundWinnerBody, null);
+            }, 1000);
+        }
     } else {
         // No spinners active
         setTimeout(() => {
-            handleRoundEnd(null, null);
+            handleRoundEnd(null, null, null);
         }, 1000);
     }
 }
 
-function handleRoundEnd(winnerPlayer, winnerBody) {
+function handleRoundEnd(winnerPlayer, winnerBody, winnerTeamId) {
     sounds.stopAllHums();
     
-    if (winnerPlayer) {
-        winnerPlayer.matchWins++;
-        
-        // Light up the score dots in their corner HUD panel
-        const dot = document.getElementById(`p${winnerPlayer.id}-dot-${winnerPlayer.matchWins}`);
-        if (dot) dot.classList.add('active');
+    const teamMode = isTeamMode();
+    let tournamentWinnerTeam = null;
+    let tournamentWinner = null;
+
+    if (teamMode) {
+        // Team mode: increment team wins
+        if (winnerTeamId !== null && winnerTeamId !== undefined) {
+            if (!game.teamWins[winnerTeamId]) game.teamWins[winnerTeamId] = 0;
+            game.teamWins[winnerTeamId]++;
+
+            // Light up score dots for all members of the winning team
+            game.players.forEach(p => {
+                if (p.type !== 'none' && p.team === winnerTeamId) {
+                    p.matchWins = game.teamWins[winnerTeamId]; // Sync individual matchWins for display
+                    const dot = document.getElementById(`p${p.id}-dot-${game.teamWins[winnerTeamId]}`);
+                    if (dot) dot.classList.add('active');
+                }
+            });
+        }
+
+        // Check if any team reached 2 wins
+        for (const [teamId, wins] of Object.entries(game.teamWins)) {
+            if (wins >= 2) {
+                tournamentWinnerTeam = parseInt(teamId);
+                break;
+            }
+        }
+    } else {
+        // FFA mode: individual win tracking (original logic)
+        if (winnerPlayer) {
+            winnerPlayer.matchWins++;
+            
+            // Light up the score dots in their corner HUD panel
+            const dot = document.getElementById(`p${winnerPlayer.id}-dot-${winnerPlayer.matchWins}`);
+            if (dot) dot.classList.add('active');
+        }
+
+        // Check if anyone has won the Best-of-Three tournament (2 wins)
+        tournamentWinner = game.players.find(p => p.type !== 'none' && p.matchWins >= 2);
     }
 
     // Refresh scoreboard header scores instantly
     updateScoreboardHeader();
 
-    // Check if anyone has won the Best-of-Three tournament (2 wins)
-    const tournamentWinner = game.players.find(p => p.type !== 'none' && p.matchWins >= 2);
+    const isTournamentOver = teamMode ? (tournamentWinnerTeam !== null) : (tournamentWinner !== null);
+
+    // Build display names for announcer
+    let roundWinnerDisplayName = '';
+    let tournamentWinnerDisplayName = '';
+
+    if (teamMode) {
+        if (winnerTeamId !== null && winnerTeamId !== undefined) {
+            const members = getTeamMemberNames(winnerTeamId);
+            roundWinnerDisplayName = `${getTeamName(winnerTeamId)} (${members.join('、')})`;
+        }
+        if (tournamentWinnerTeam !== null) {
+            const members = getTeamMemberNames(tournamentWinnerTeam);
+            tournamentWinnerDisplayName = `${getTeamName(tournamentWinnerTeam)} (${members.join('、')})`;
+        }
+    } else {
+        if (winnerPlayer) roundWinnerDisplayName = winnerPlayer.name;
+        if (tournamentWinner) tournamentWinnerDisplayName = tournamentWinner.name;
+    }
 
     // Update Announcer overlay in the background for extra visual cues
     announcerOverlay.classList.add('dimmed');
-    if (tournamentWinner) {
+    if (isTournamentOver) {
         announcerText.innerText = "比賽結束！";
-        announcerSubtext.innerText = `${tournamentWinner.name} 奪得最終冠軍！`;
+        announcerSubtext.innerText = `${tournamentWinnerDisplayName} 奪得最終冠軍！`;
     } else {
         announcerText.innerText = `第 ${game.currentRound} 局結束`;
-        if (winnerPlayer) {
-            announcerSubtext.innerText = `${winnerPlayer.name} 贏得本局！`;
+        if (roundWinnerDisplayName) {
+            announcerSubtext.innerText = `${roundWinnerDisplayName} 贏得本局！`;
         } else {
             announcerSubtext.innerText = "雙方平手！";
         }
     }
     announcerText.className = 'announcer-text trigger';
     announcerSubtext.className = 'announcer-subtext trigger';
-    spectateInfo.innerText = tournamentWinner ? '冠軍誕生！' : '回合結束';
+    spectateInfo.innerText = isTournamentOver ? '冠軍誕生！' : '回合結束';
 
     // Populate Modal Overlay values dynamically
     const modalRoundTitle = document.getElementById('modal-round-title');
@@ -3302,7 +3634,7 @@ function handleRoundEnd(winnerPlayer, winnerBody) {
     const btnModalNext = document.getElementById('btn-modal-next');
 
     if (modalRoundTitle) {
-        if (tournamentWinner) {
+        if (isTournamentOver) {
             modalRoundTitle.innerText = '對決結果 (Match Completed)';
         } else {
             modalRoundTitle.innerText = `ROUND ${game.currentRound} 結束`;
@@ -3310,10 +3642,10 @@ function handleRoundEnd(winnerPlayer, winnerBody) {
     }
 
     if (modalRoundWinner) {
-        if (tournamentWinner) {
-            modalRoundWinner.innerText = `🏆 ${tournamentWinner.name} 奪得最終冠軍！`;
-        } else if (winnerPlayer) {
-            modalRoundWinner.innerText = `${winnerPlayer.name} 贏得本局！`;
+        if (isTournamentOver) {
+            modalRoundWinner.innerText = `🏆 ${tournamentWinnerDisplayName} 奪得最終冠軍！`;
+        } else if (roundWinnerDisplayName) {
+            modalRoundWinner.innerText = `${roundWinnerDisplayName} 贏得本局！`;
         } else {
             modalRoundWinner.innerText = '雙方平手！';
         }
@@ -3321,21 +3653,38 @@ function handleRoundEnd(winnerPlayer, winnerBody) {
 
     if (modalScoresList) {
         modalScoresList.innerHTML = '';
-        game.players.forEach(p => {
-            if (p.type !== 'none') {
+        if (teamMode) {
+            // Show scores per team
+            const teams = getActiveTeams();
+            teams.forEach(teamId => {
                 const row = document.createElement('div');
                 row.className = 'modal-player-score-row';
+                const members = getTeamMemberNames(teamId);
+                const teamColor = getTeamColor(teamId);
+                const wins = game.teamWins[teamId] || 0;
                 row.innerHTML = `
-                    <span class="score-label" style="color: ${p.color}">P${p.id} ${p.name}</span>
-                    <span class="score-val">${p.matchWins} 勝</span>
+                    <span class="score-label" style="color: ${teamColor}">${getTeamName(teamId)} (${members.join('、')})</span>
+                    <span class="score-val">${wins} 勝</span>
                 `;
                 modalScoresList.appendChild(row);
-            }
-        });
+            });
+        } else {
+            game.players.forEach(p => {
+                if (p.type !== 'none') {
+                    const row = document.createElement('div');
+                    row.className = 'modal-player-score-row';
+                    row.innerHTML = `
+                        <span class="score-label" style="color: ${p.color}">P${p.id} ${p.name}</span>
+                        <span class="score-val">${p.matchWins} 勝</span>
+                    `;
+                    modalScoresList.appendChild(row);
+                }
+            });
+        }
     }
 
     if (btnModalNext) {
-        if (tournamentWinner) {
+        if (isTournamentOver) {
             btnModalNext.innerText = '查看最終戰績';
         } else {
             btnModalNext.innerText = '開始下一局';
@@ -3349,7 +3698,7 @@ function handleRoundEnd(winnerPlayer, winnerBody) {
     }
 }
 
-function transitionToVictory(winnerBody) {
+function transitionToVictory(winnerBody, winnerTeamId) {
     game.state = STATE_VICTORY;
     sounds.stopAllHums();
     cancelAnimationFrame(game.animationFrameId);
@@ -3361,19 +3710,30 @@ function transitionToVictory(winnerBody) {
     // Hide scoreboard header and update page title
     const scoreboard = document.getElementById('battle-scoreboard-header');
     if (scoreboard) scoreboard.classList.add('scoreboard-hidden');
-    if (winnerBody && winnerBody.player) {
-        document.title = `戰鬥結束 - ${winnerBody.player.name} 獲得冠軍!`;
-    } else {
-        document.title = '戰鬥結束 - 平手';
-    }
-    
+
+    const teamMode = isTeamMode();
     const wNameText = document.getElementById('winner-name');
-    if (winnerBody && winnerBody.player) {
+
+    if (teamMode && winnerTeamId !== null && winnerTeamId !== undefined) {
+        // Team mode victory display
+        const members = getTeamMemberNames(winnerTeamId);
+        const teamColor = getTeamColor(winnerTeamId);
+        const displayName = `${getTeamName(winnerTeamId)}`;
+        const membersStr = members.join('、');
+
+        document.title = `戰鬥結束 - ${displayName} 獲得冠軍!`;
+        wNameText.innerText = `${displayName}\n${membersStr}`;
+        wNameText.style.background = `linear-gradient(135deg, #fff, ${teamColor}, #fff)`;
+        wNameText.style.webkitBackgroundClip = 'text';
+        sounds.playWinSound();
+    } else if (winnerBody && winnerBody.player) {
+        document.title = `戰鬥結束 - ${winnerBody.player.name} 獲得冠軍!`;
         wNameText.innerText = winnerBody.player.name;
         wNameText.style.background = `linear-gradient(135deg, #fff, ${winnerBody.player.color}, #fff)`;
         wNameText.style.webkitBackgroundClip = 'text';
         sounds.playWinSound();
     } else {
+        document.title = '戰鬥結束 - 平手';
         wNameText.innerText = '平手 (NO WINNER)';
         wNameText.style.background = '#8a99ad';
     }
@@ -3381,34 +3741,65 @@ function transitionToVictory(winnerBody) {
     // Populate summary statistics table
     const tableBody = document.getElementById('victory-stats-rows');
     tableBody.innerHTML = '';
-    
-    // Sort players by match wins descending (First to 2 wins is first, etc)
-    const activePlayersSorted = game.players
-        .filter(p => p.type !== 'none')
-        .sort((a, b) => {
-            if (b.matchWins !== a.matchWins) {
-                return b.matchWins - a.matchWins;
-            }
-            return a.eliminationRank - b.eliminationRank;
+
+    if (teamMode) {
+        // Team mode: show stats grouped by team
+        const teams = getActiveTeams();
+        // Sort teams by wins descending
+        teams.sort((a, b) => (game.teamWins[b] || 0) - (game.teamWins[a] || 0));
+
+        teams.forEach((teamId, index) => {
+            const wins = game.teamWins[teamId] || 0;
+            const isWinner = wins >= 2;
+            const teamColor = getTeamColor(teamId);
+            const members = game.players.filter(p => p.type !== 'none' && p.team === teamId);
+            const totalHits = members.reduce((sum, p) => sum + p.hits, 0);
+            const memberNames = members.map(p => p.name).join('、');
+
+            const row = document.createElement('div');
+            row.className = `stats-row ${isWinner ? 'is-winner' : ''}`;
+            
+            const rankLabel = (index === 0) ? '🥇 1' : `${index + 1}`;
+            
+            row.innerHTML = `
+                <div class="rank-cell">${rankLabel}</div>
+                <div style="color: ${teamColor}; font-weight: bold;">${getTeamName(teamId)} (${memberNames})</div>
+                <div>${wins} 勝</div>
+                <div>${totalHits}</div>
+                <div>-</div>
+            `;
+            
+            tableBody.appendChild(row);
         });
-        
-    activePlayersSorted.forEach((p, index) => {
-        const row = document.createElement('div');
-        const isWinner = p.matchWins >= 2;
-        row.className = `stats-row ${isWinner ? 'is-winner' : ''}`;
-        
-        const rankLabel = (index === 0) ? '🥇 1' : `${index + 1}`;
-        
-        row.innerHTML = `
-            <div class="rank-cell">${rankLabel}</div>
-            <div style="color: ${p.color}; font-weight: bold;">${p.name} (${BEYBLADE_STYLES[p.beybladeType].name})</div>
-            <div>${p.matchWins} 勝</div>
-            <div>${p.hits}</div>
-            <div>${p.isCritical ? '是 (100%)' : '否'}</div>
-        `;
-        
-        tableBody.appendChild(row);
-    });
+    } else {
+        // FFA mode: original per-player stats
+        const activePlayersSorted = game.players
+            .filter(p => p.type !== 'none')
+            .sort((a, b) => {
+                if (b.matchWins !== a.matchWins) {
+                    return b.matchWins - a.matchWins;
+                }
+                return a.eliminationRank - b.eliminationRank;
+            });
+            
+        activePlayersSorted.forEach((p, index) => {
+            const row = document.createElement('div');
+            const isWinner = p.matchWins >= 2;
+            row.className = `stats-row ${isWinner ? 'is-winner' : ''}`;
+            
+            const rankLabel = (index === 0) ? '🥇 1' : `${index + 1}`;
+            
+            row.innerHTML = `
+                <div class="rank-cell">${rankLabel}</div>
+                <div style="color: ${p.color}; font-weight: bold;">${p.name} (${BEYBLADE_STYLES[p.beybladeType].name})</div>
+                <div>${p.matchWins} 勝</div>
+                <div>${p.hits}</div>
+                <div>${p.isCritical ? '是 (100%)' : '否'}</div>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+    }
 }
 
 function cleanupBattlePhysics() {
